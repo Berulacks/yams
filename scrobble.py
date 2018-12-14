@@ -5,7 +5,22 @@ import xml.etree.ElementTree as ET
 from mpd import MPDClient
 import select
 from pathlib import Path
+import time
+import asyncio
 
+SCROBBLE_THRESHOLD=50
+SCROBBLE_MIN_TIME=10
+WATCH_THRESHOLD=5
+
+API_KEY="559cb22723e5ada5c41952cb087ad4b8"
+API_SECRET="295e37f10a2521c9ecebfab886d3c9ad"
+
+TEST_ARTIST="betamaxx"
+TEST_TRACK="Contra"
+
+BASE_URL="http://ws.audioscrobbler.com/2.0/"
+
+SESSION_FILE="./.lastfm_session"
 
 def sign_signature(parameters,secret=""):
     """
@@ -100,57 +115,117 @@ def save_credentials(session_filepath, user_name, session_key):
         session_file.write(str(user_name)+"\n")
         session_file.write(str(session_key)+"\n")
 
+def scrobble_track(track_info):
+    print("Scrobbling!")
+    pass
+
 def mpd_wait_for_play(client):
 
-    playing = False
+    status = client.status()
+    state = status["state"]
+    if state == "play":
+        return True
 
-    client.send_idle()
-    #print("Sent idle, entering loop")
-    while not playing:
-        # do this periodically, e.g. in event loop
-        try:
-            canRead = select.select([client], [], [], 60)[0]
-            #print("Selected.")
-            if canRead:
-                changes = client.fetch_idle()
-                print("Received event in subsytem: {}".format(changes)) # handle changes
-                status = client.status()
-                #print(status)
-                state = status["state"]
+    try:
 
-                if state == "play":
-                    song = client.currentsong()
-                    #print("Song info: {}".format(song))
-                    song_duration = float(song["duration"])
-                    elapsed = float(status["elapsed"])
+        changes = client.idle("player")
 
-                    percent_elapsed = elapsed / song_duration * 100
-                    print("{}, at: {}%".format(song["title"],percent_elapsed))
-                    #pure = status["time"]/
-                    #print(client.find("song",
+        print("Received event in subsytem: {}".format(changes)) # handle changes
 
-                    return ( song["title"], song["file"], percent_elapsed )
+        status = client.status()
+        #print(status)
+        state = status["state"]
+        print("Received state: {}".format(state))
 
-            client.send_idle() # continue idling
-        except Exception as e:
-            print("Something went wrong waiting on Idle: {}".format(e))
-            print("Exiting...")
-            exit(1)
+        if state == "play":
+            return True
+        return mpd_wait_for_play(client)
+
+    except Exception as e:
+        print("Something went wrong waiting on Idle: {}".format(e))
+        print("Exiting...")
+        exit(1)
+
+def mpd_watch_track(client, allow_scrobble_same_song_twice_in_a_row=False, use_real_time=True):
+
+    current_watched_track = ""
+    reject_track=""
+
+    # For use with `use_real_time` parameter
+    start_time = time.time()
+    reported_start_time = 0
+
+    while mpd_wait_for_play(client):
+
+        scrobble_threshold = SCROBBLE_THRESHOLD
+
+        status = client.status()
+        state = status["state"]
+
+        if state == "play":
+
+            # The time since the song claims it started, that we've been able to measure in python
+            real_time_elapsed = reported_start_time + (time.time()-start_time)
+            #print(real_time_elapsed)
+
+            song = client.currentsong()
+            #print("Song info: {}".format(song))
+
+            song_duration = float(song["duration"])
+            title = song["title"]
+
+            elapsed = float(status["elapsed"])
+
+            # The % between 0-100 that has completed so far
+            percent_elapsed = elapsed / song_duration * 100
+
+            if (current_watched_track != title and # Is this a new track to watch?
+                title != reject_track and # And it's not a track to be rejected
+                percent_elapsed < scrobble_threshold and # And it's below the scrobble threshold
+                real_time_elapsed > WATCH_THRESHOLD and # And it's REALLY passed 5 seconds?
+                elapsed > WATCH_THRESHOLD): # And it reports to be passed 5 seconds (sanity check)
+
+                print("Starting to watch track: {}".format(title))
+                current_watched_track = title
+                reject_track = ""
+
+                start_time = time.time()
+                reported_start_time = elapsed
+
+                if use_real_time and SCROBBLE_THRESHOLD < 50 and reported_start_time < song_duration * SCROBBLE_THRESHOLD:
+                    # So, if we're using real time, and our SCROBBLE_THRESHOLD is less than 50, we need to do some math:
+                    # Assuming we might have started late, how many real world seconds do I have to listen to to be able to say I've listened to N% (where N = SCROBBLE_THRESHOLD) of music? Take that amount of seconds and turn it into its own threshold (added to the aforementioned late start time) and baby you've got a stew going
+                    scrobble_threshold = ( reported_start_time + song_duration * SCROBBLE_THRESHOLD/100 ) / song_duration * 100
+                    print("While the scrobbling threshold would normally be {}%, since we're starting at {}, it's now {}%".format(SCROBBLE_THRESHOLD,reported_start_time,scrobble_threshold))
+                else:
+                    scrobble_threshold = SCROBBLE_THRESHOLD
+
+                print("Reported start time: {}, real world time: {}".format(reported_start_time,start_time))
+
+            elif current_watched_track == title:
+
+                print("{}, at: {}%".format(title,percent_elapsed))
+
+                # Are we above the scrobble threshold? Have we been listening the required amount of time?
+                if percent_elapsed >= scrobble_threshold and elapsed > SCROBBLE_MIN_TIME:
+                    # If we're using real time, lets ensure we've been listening this long:
+                    if not use_real_time or real_time_elapsed >= (scrobble_threshold/100) * song_duration:
+                        current_watched_track = ""
+                        scrobble_track(song)
+                        if not allow_scrobble_same_song_twice_in_a_row:
+                            reject_track = title
+                    else:
+                        print("Rejected, time elapsed {} < duration {}".format(real_time_elapsed, 0.5*song_duration))
+
+            time.sleep(0.5)
+
+
 
 # SCRIPT STUFF
-
-API_KEY="559cb22723e5ada5c41952cb087ad4b8"
-API_SECRET="295e37f10a2521c9ecebfab886d3c9ad"
-
-TEST_ARTIST="betamaxx"
-TEST_TRACK="Contra"
-
-BASE_URL="http://ws.audioscrobbler.com/2.0/"
-
-SESSION_FILE="./.lastfm_session"
 session = ""
 
 if __name__ == "__main__":
+
 
     # Try to read a saved session...
     try:
@@ -178,11 +253,6 @@ if __name__ == "__main__":
     client.connect("{}/.config/mpd/socket".format(str(Path.home())), 6600)
     print("Connected to mpd, version: {}".format(client.mpd_version))
 
-    currently_tracked_song = ""
-    while True:
+    mpd_watch_track(client)
 
-        title, filename, percent_elapsed = mpd_wait_for_play(client)
-        if percent_elapsed < 50:
-            currently_tracked_song = title
-        elif currently_tracked_song == filename:
-            print("Scrobbling {}!".format(title))
+

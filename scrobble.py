@@ -4,6 +4,7 @@ import requests, hashlib
 import xml.etree.ElementTree as ET
 from mpd import MPDClient
 import select
+from pathlib import Path
 
 
 def sign_signature(parameters,secret=""):
@@ -138,7 +139,7 @@ if __name__ == "__main__":
         save_credentials(SESSION_FILE,user_name,session)
 
     client = MPDClient()
-    client.connect("/home/derin/.config/mpd/socket", 6600)
+    client.connect("{}/.config/mpd/socket".format(str(Path.home())), 6600)
     print(client.mpd_version)
 
 

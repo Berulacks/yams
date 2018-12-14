@@ -100,6 +100,43 @@ def save_credentials(session_filepath, user_name, session_key):
         session_file.write(str(user_name)+"\n")
         session_file.write(str(session_key)+"\n")
 
+def mpd_wait_for_play(client):
+
+    playing = False
+
+    client.send_idle()
+    #print("Sent idle, entering loop")
+    while not playing:
+        # do this periodically, e.g. in event loop
+        try:
+            canRead = select.select([client], [], [], 60)[0]
+            #print("Selected.")
+            if canRead:
+                changes = client.fetch_idle()
+                print("Received event in subsytem: {}".format(changes)) # handle changes
+                status = client.status()
+                #print(status)
+                state = status["state"]
+
+                if state == "play":
+                    song = client.currentsong()
+                    #print("Song info: {}".format(song))
+                    song_duration = float(song["duration"])
+                    elapsed = float(status["elapsed"])
+
+                    percent_elapsed = elapsed / song_duration * 100
+                    print("{}, at: {}%".format(song["title"],percent_elapsed))
+                    #pure = status["time"]/
+                    #print(client.find("song",
+
+                    return ( song["title"], song["file"], percent_elapsed )
+
+            client.send_idle() # continue idling
+        except Exception as e:
+            print("Something went wrong waiting on Idle: {}".format(e))
+            print("Exiting...")
+            exit(1)
+
 # SCRIPT STUFF
 
 API_KEY="559cb22723e5ada5c41952cb087ad4b8"
@@ -133,25 +170,19 @@ if __name__ == "__main__":
         print("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(API_KEY,token))
         session_info = authenticate(token,BASE_URL,API_KEY,API_SECRET)
 
-        user_name = session_info[0]
-        session = session_info[1]
+        user_name, session = session_info
 
         save_credentials(SESSION_FILE,user_name,session)
 
     client = MPDClient()
     client.connect("{}/.config/mpd/socket".format(str(Path.home())), 6600)
-    print(client.mpd_version)
+    print("Connected to mpd, version: {}".format(client.mpd_version))
 
+    currently_tracked_song = ""
+    while True:
 
-    client.send_idle()
-    print("Sent idle, entering loop")
-    while(1==1):
-        # do this periodically, e.g. in event loop
-        canRead = select.select([client], [], [], 60)[0]
-        print("Selected.")
-        if canRead:
-            changes = client.fetch_idle()
-            print("Received event in subsytem: {}".format(changes)) # handle changes
-            print(client.status())
-        client.send_idle() # continue idling
-
+        title, filename, percent_elapsed = mpd_wait_for_play(client)
+        if percent_elapsed < 50:
+            currently_tracked_song = title
+        elif currently_tracked_song == filename:
+            print("Scrobbling {}!".format(title))

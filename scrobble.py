@@ -10,15 +10,6 @@ import asyncio
 
 from configure import configure
 
-SCROBBLE_THRESHOLD=50
-SCROBBLE_MIN_TIME=10
-WATCH_THRESHOLD=5
-UPDATE_INTERVAL=1
-
-API_KEY="MISSING"
-API_SECRET="MISSING"
-BASE_URL=""
-
 def sign_signature(parameters,secret=""):
     """
     Create a signature for a signed request
@@ -328,7 +319,7 @@ def mpd_watch_track(client, session, config):
     api_secret = config["api_secret"]
 
     use_real_time = config["real_time"]
-    allow_double = config["allow_same_track_scrobble_in_a_row"]
+    allow_scrobble_same_song_twice_in_a_row = config["allow_same_track_scrobble_in_a_row"]
 
     default_scrobble_threshold = config["scrobble_threshold"]
     scrobble_min_time = config["scrobble_min_time"]
@@ -378,7 +369,7 @@ def mpd_watch_track(client, session, config):
                 start_time = time.time()
                 reported_start_time = elapsed
 
-                if use_real_time and default_scrobble_threshold < 50 and reported_start_time < song_duration * default_scrobble_threshold:
+                if use_real_time:
                     # So, if we're using real time, and our default_scrobble_threshold is less than 50, we need to do some math:
                     # Assuming we might have started late, how many real world seconds do I have to listen to to be able to say I've listened to N% (where N = default_scrobble_threshold) of music? Take that amount of seconds and turn it into its own threshold (added to the aforementioned late start time) and baby you've got a stew going
                     scrobble_threshold = ( reported_start_time + song_duration * default_scrobble_threshold/100 ) / song_duration * 100
@@ -427,20 +418,10 @@ if __name__ == "__main__":
     base_url = config["base_url"]
     api_key = config["api_key"]
     api_secret = config["api_secret"]
-    real_time_on = config["real_time"]
-    allow_double = config["allow_same_track_scrobble_in_a_row"]
 
     mpd_host = config["mpd_host"]
     mpd_port = config["mpd_port"]
 
-
-    API_KEY = api_key
-    API_SECRET = api_secret
-    BASE_URL = base_url
-    SCROBBLE_THRESHOLD = config["scrobble_threshold"]
-    SCROBBLE_MIN_TIME = config["scrobble_min_time"]
-    WATCH_THRESHOLD = config["watch_threshold"]
-    UPDATE_INTERVAL = config["update_interval"]
 
     # Try to read a saved session...
     try:

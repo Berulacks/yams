@@ -74,7 +74,7 @@ def get_home_dir():
 
 def process_cli_args():
 
-    parser = argparse.ArgumentParser(prog="YAMS", description="Yet Another Mpd Scrobbler",formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(prog="YAMS", description="Yet Another Mpd Scrobbler. Configuration directories are either ~/.config/yams, ~/.yams, or your current working directory. Create one of these paths if need be.")
     parser.add_argument('-m', '--mpd-host', type=str, help="Your MPD instance's host", metavar='127.0.0.1')
     parser.add_argument('-p', '--mpd-port', type=int, help="Your MPD instance's port", metavar='6600')
     parser.add_argument('-s', '--session-file-path', type=str, help='Where to read in/save your session file to. Defaults to inside your config directory.', metavar='./.lastfm_session')

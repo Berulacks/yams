@@ -1,7 +1,7 @@
 YAMS
 ====
 
-*Yet Another Mpd Scrobbler*
+*Yet Another Mpd Scrobbler (For Last.FM)*
 
 YAMS is exactly what its name says it is.
 

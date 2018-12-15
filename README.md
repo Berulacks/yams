@@ -41,24 +41,26 @@ usage: YAMS [-h] [-m 127.0.0.1] [-p 6600] [-s ./.lastfm_session]
             [--api-key wdoqwnd10j2903j013r] [--api-secret oegnapj390rj2q]
             [-t 50] [-r] [-d] [-c ~/my_config] [-g] [-l /path/to/log]
 
-Yet Another Mpd Scrobbler
+Yet Another Mpd Scrobbler. Configuration directories are either
+~/.config/yams, ~/.yams, or your current working directory. Create one of
+these paths if need be.
 
 optional arguments:
   -h, --help            show this help message and exit
   -m 127.0.0.1, --mpd-host 127.0.0.1
-                        Your MPD instance's host (default: None)
+                        Your MPD instance's host
   -p 6600, --mpd-port 6600
-                        Your MPD instance's port (default: None)
+                        Your MPD instance's port
   -s ./.lastfm_session, --session-file-path ./.lastfm_session
                         Where to read in/save your session file to. Defaults
-                        to inside your config directory. (default: None)
+                        to inside your config directory.
   --api-key wdoqwnd10j2903j013r
-                        Your last.fm api key (default: None)
+                        Your last.fm api key
   --api-secret oegnapj390rj2q
-                        Your last.fm api secret (default: None)
+                        Your last.fm api secret
   -t 50, --scrobble-threshold 50
                         The minimum point at which to scrobble, defaults to 50
-                        percent (default: None)
+                        percent
   -r, --real-time       Use real times when calculating scrobble times? (e.g.
                         how long you've been running the app, not the track
                         time reported by mpd). Default: True
@@ -66,13 +68,12 @@ optional arguments:
                         Allow the program to scrobble the same track multiple
                         times in a row? Default: False
   -c ~/my_config, --config ~/my_config
-                        Your config to read (default: None)
+                        Your config to read
   -g, --generate-config
                         Automatically save/update a configuration file. Good
-                        for bootsrapping. (default: False)
+                        for bootsrapping.
   -l /path/to/log, --log-file /path/to/log
                         Full path to a log file. If not set, a log file called
                         "yams.log" will be placed in the current config
-                        directory. (default: None)
-
+                        directory.
                         ```

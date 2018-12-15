@@ -28,10 +28,10 @@ DEFAULTS={
         "session_file":".lastfm_session",
         "mpd_host":"127.0.0.1",
         "mpd_port":"6600",
-        "api_key":"MISSING",
+        "api_key": "293ef0836603c5c8023ba86eb413794b",
+        "api_secret": "e952c611efe32c66f2b48a93b39d6219",
         "real_time":True,
         "allow_same_track_scrobble_in_a_row":False,
-        "api_secret":"MISSING"
         }
 
 logger = logging.getLogger("yams")

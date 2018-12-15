@@ -312,17 +312,15 @@ def mpd_wait_for_play(client):
         print("Exiting...")
         exit(1)
 
-def mpd_watch_track(client, session, allow_scrobble_same_song_twice_in_a_row=False, use_real_time=True):
+def mpd_watch_track(client, session, config):
     """
     The main loop - watches MPD and tracks the currently playing song. Sends Last.FM updates if need be.
 
     :param client: The MPD client object
-    :param allow_scrobble_same_song_twice_in_a_row: If set to True, the user can end a song, and scrobble it by playing it again. Likewise, they can scrobble, rewind, then scrobble again. When False the same track cannot be scrobbled twice in a row. Defaults to False.
-    :param use_real_time: Use the actual amount of time elapsed since playing a song to determine whether to scrobble or not. Basically this means fast forwarding won't affect your listen time. Prevents "fake" scrobbles.
+    :param config: The global config file
 
     :type client: mpd.MPDClient
-    :type allow_scrobble_same_song_twice_in_a_row: bool
-    :type use_real_time: bool
+    :type config: dict
     """
 
     base_url = config["base_url"]

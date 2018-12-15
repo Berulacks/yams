@@ -213,6 +213,7 @@ def now_playing(track_info,url,api_key,api_secret,session_key):
             "method":"track.updateNowPlaying",
             "artist": track_info['artist'],
             "track": track_info["title"],
+            "context": "mpd",
             "api_key": api_key,
             "sk": session_key,
             }

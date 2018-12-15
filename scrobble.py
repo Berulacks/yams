@@ -327,7 +327,7 @@ def mpd_watch_track(client, session, config):
     api_key = config["api_key"]
     api_secret = config["api_secret"]
 
-    real_time_on = config["real_time"]
+    use_real_time = config["real_time"]
     allow_double = config["allow_same_track_scrobble_in_a_row"]
 
     default_scrobble_threshold = config["scrobble_threshold"]

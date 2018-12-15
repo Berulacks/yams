@@ -6,9 +6,8 @@ from mpd import MPDClient
 import select
 from pathlib import Path
 import time
-import asyncio
 
-from configure import configure
+from yams.configure import configure
 
 def sign_signature(parameters,secret=""):
     """
@@ -406,27 +405,11 @@ def mpd_watch_track(client, session, config):
             time.sleep(update_interval)
 
 
-
-# SCRIPT STUFF
-session = ""
-
-if __name__ == "__main__":
-
-    config = configure()
-
-    session_file = config["session_file"]
-    base_url = config["base_url"]
-    api_key = config["api_key"]
-    api_secret = config["api_secret"]
-
-    mpd_host = config["mpd_host"]
-    mpd_port = config["mpd_port"]
-
-
+def find_session(session_file_path,base_url,api_key,api_secret):
     # Try to read a saved session...
     try:
-        with open(session_file) as session_file:
-            lines=session_file.readlines()
+        with open(session_file_path) as session_f_stream:
+            lines=session_f_stream.readlines()
 
             user_name=lines[0].strip()
             session=lines[1].strip()
@@ -443,7 +426,25 @@ if __name__ == "__main__":
 
         user_name, session = session_info
 
-        save_credentials(session_file,user_name,session)
+        save_credentials(session_file_path,user_name,session)
+
+    return (user_name,session)
+
+def cli_run():
+
+    session = ""
+    config = configure()
+
+    session_file = config["session_file"]
+    base_url = config["base_url"]
+    api_key = config["api_key"]
+    api_secret = config["api_secret"]
+
+    mpd_host = config["mpd_host"]
+    mpd_port = config["mpd_port"]
+
+
+    user_name, session = find_session(session_file,base_url,api_key,api_secret)
 
     client = MPDClient()
     client.connect(mpd_host, mpd_port)
@@ -457,7 +458,5 @@ if __name__ == "__main__":
     client.disconnect()
 
 
-
-
-
-
+if __name__ == "__main__":
+    cli_run()

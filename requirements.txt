@@ -1,0 +1,2 @@
+python-mpd2==1.0.0
+PyYAML==4.2b4

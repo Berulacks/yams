@@ -8,18 +8,16 @@ from pathlib import Path
 import time
 import asyncio
 
+from configure import configure
+
 SCROBBLE_THRESHOLD=50
 SCROBBLE_MIN_TIME=10
 WATCH_THRESHOLD=5
-
 UPDATE_INTERVAL=1
 
-API_KEY="559cb22723e5ada5c41952cb087ad4b8"
-API_SECRET="295e37f10a2521c9ecebfab886d3c9ad"
-
-BASE_URL="http://ws.audioscrobbler.com/2.0/"
-
-SESSION_FILE="./.lastfm_session"
+API_KEY="MISSING"
+API_SECRET="MISSING"
+BASE_URL=""
 
 def sign_signature(parameters,secret=""):
     """
@@ -313,7 +311,7 @@ def mpd_wait_for_play(client):
         print("Exiting...")
         exit(1)
 
-def mpd_watch_track(client, allow_scrobble_same_song_twice_in_a_row=False, use_real_time=True):
+def mpd_watch_track(client, session, allow_scrobble_same_song_twice_in_a_row=False, use_real_time=True):
     """
     The main loop - watches MPD and tracks the currently playing song. Sends Last.FM updates if need be.
 
@@ -326,6 +324,18 @@ def mpd_watch_track(client, allow_scrobble_same_song_twice_in_a_row=False, use_r
     :type use_real_time: bool
     """
 
+    base_url = config["base_url"]
+    api_key = config["api_key"]
+    api_secret = config["api_secret"]
+
+    real_time_on = config["real_time"]
+    allow_double = config["allow_same_track_scrobble_in_a_row"]
+
+    default_scrobble_threshold = config["scrobble_threshold"]
+    scrobble_min_time = config["scrobble_min_time"]
+    watch_threshold = config["watch_threshold"]
+    update_interval = config["update_interval"]
+
     current_watched_track = ""
     reject_track=""
 
@@ -335,7 +345,7 @@ def mpd_watch_track(client, allow_scrobble_same_song_twice_in_a_row=False, use_r
 
     while mpd_wait_for_play(client):
 
-        scrobble_threshold = SCROBBLE_THRESHOLD
+        scrobble_threshold = default_scrobble_threshold
 
         status = client.status()
         state = status["state"]
@@ -360,8 +370,8 @@ def mpd_watch_track(client, allow_scrobble_same_song_twice_in_a_row=False, use_r
             if (current_watched_track != title and # Is this a new track to watch?
                 title != reject_track and # And it's not a track to be rejected
                 percent_elapsed < scrobble_threshold and # And it's below the scrobble threshold
-                real_time_elapsed > WATCH_THRESHOLD and # And it's REALLY passed 5 seconds?
-                elapsed > WATCH_THRESHOLD): # And it reports to be passed 5 seconds (sanity check)
+                real_time_elapsed > watch_threshold and # And it's REALLY passed 5 seconds?
+                elapsed > watch_threshold): # And it reports to be passed 5 seconds (sanity check)
 
                 current_watched_track = title
                 reject_track = ""
@@ -369,18 +379,18 @@ def mpd_watch_track(client, allow_scrobble_same_song_twice_in_a_row=False, use_r
                 start_time = time.time()
                 reported_start_time = elapsed
 
-                if use_real_time and SCROBBLE_THRESHOLD < 50 and reported_start_time < song_duration * SCROBBLE_THRESHOLD:
-                    # So, if we're using real time, and our SCROBBLE_THRESHOLD is less than 50, we need to do some math:
-                    # Assuming we might have started late, how many real world seconds do I have to listen to to be able to say I've listened to N% (where N = SCROBBLE_THRESHOLD) of music? Take that amount of seconds and turn it into its own threshold (added to the aforementioned late start time) and baby you've got a stew going
-                    scrobble_threshold = ( reported_start_time + song_duration * SCROBBLE_THRESHOLD/100 ) / song_duration * 100
-                    print("While the scrobbling threshold would normally be {}%, since we're starting at {}, it's now {}%".format(SCROBBLE_THRESHOLD,reported_start_time,scrobble_threshold))
+                if use_real_time and default_scrobble_threshold < 50 and reported_start_time < song_duration * default_scrobble_threshold:
+                    # So, if we're using real time, and our default_scrobble_threshold is less than 50, we need to do some math:
+                    # Assuming we might have started late, how many real world seconds do I have to listen to to be able to say I've listened to N% (where N = default_scrobble_threshold) of music? Take that amount of seconds and turn it into its own threshold (added to the aforementioned late start time) and baby you've got a stew going
+                    scrobble_threshold = ( reported_start_time + song_duration * default_scrobble_threshold/100 ) / song_duration * 100
+                    print("While the scrobbling threshold would normally be {}%, since we're starting at {}, it's now {}%".format(default_scrobble_threshold,reported_start_time,scrobble_threshold))
                 else:
-                    scrobble_threshold = SCROBBLE_THRESHOLD
+                    scrobble_threshold = default_scrobble_threshold
 
                 #print("Reported start time: {}, real world time: {}".format(reported_start_time,start_time))
-                print("Starting to watch track: {}, currently at: {}/{}s ({}%). Will scrobble in: {}s".format(title,format(elapsed, '.0f'),format(song_duration,'.0f'), format(percent_elapsed, '.1f'), format(( song_duration * scrobble_threshold / 100 ) - elapsed  ), '.0f') )
+                print("Starting to watch track: {}, currently at: {}/{}s ({}%). Will scrobble in: {}s".format(title,format(elapsed, '.0f'),format(song_duration,'.0f'), format(percent_elapsed, '.1f'), format(( song_duration * scrobble_threshold / 100 ) - elapsed, '.0f'  ) ) )
                 try:
-                    now_playing(song,BASE_URL,API_KEY,API_SECRET,session)
+                    now_playing(song,base_url,api_key,api_secret,session)
                 except Exception as e:
                     print("Somethings went sending Last.FM 'Now Playing' info!: {}".format(e))
 
@@ -389,12 +399,12 @@ def mpd_watch_track(client, allow_scrobble_same_song_twice_in_a_row=False, use_r
                 #print("{}, at: {}%".format(title,format(percent_elapsed, '.2f')))
 
                 # Are we above the scrobble threshold? Have we been listening the required amount of time?
-                if percent_elapsed >= scrobble_threshold and elapsed > SCROBBLE_MIN_TIME:
+                if percent_elapsed >= scrobble_threshold and elapsed > scrobble_min_time:
                     # If we're using real time, lets ensure we've been listening this long:
                     if not use_real_time or real_time_elapsed >= (scrobble_threshold/100) * song_duration:
                         current_watched_track = ""
                         try:
-                            scrobble_track(song,start_time,BASE_URL,API_KEY,API_SECRET,session)
+                            scrobble_track(song,start_time,base_url,api_key,api_secret,session)
                         except Exception as e:
                             print("Somethings went scrobbling to Last.FM!!: {}".format(e))
 
@@ -403,7 +413,7 @@ def mpd_watch_track(client, allow_scrobble_same_song_twice_in_a_row=False, use_r
                     else:
                         print("Can't scrobble yet, time elapsed ({}s) < adjustted duration ({}s)".format(real_time_elapsed, 0.5*song_duration))
 
-            time.sleep(UPDATE_INTERVAL)
+            time.sleep(update_interval)
 
 
 
@@ -412,9 +422,30 @@ session = ""
 
 if __name__ == "__main__":
 
+    config = configure()
+
+    session_file = config["session_file"]
+    base_url = config["base_url"]
+    api_key = config["api_key"]
+    api_secret = config["api_secret"]
+    real_time_on = config["real_time"]
+    allow_double = config["allow_same_track_scrobble_in_a_row"]
+
+    mpd_host = config["mpd_host"]
+    mpd_port = config["mpd_port"]
+
+
+    API_KEY = api_key
+    API_SECRET = api_secret
+    BASE_URL = base_url
+    SCROBBLE_THRESHOLD = config["scrobble_threshold"]
+    SCROBBLE_MIN_TIME = config["scrobble_min_time"]
+    WATCH_THRESHOLD = config["watch_threshold"]
+    UPDATE_INTERVAL = config["update_interval"]
+
     # Try to read a saved session...
     try:
-        with open(SESSION_FILE) as session_file:
+        with open(session_file) as session_file:
             lines=session_file.readlines()
 
             user_name=lines[0].strip()
@@ -426,20 +457,20 @@ if __name__ == "__main__":
     except Exception as e:
         print("Couldn't read token file: {}".format(e))
         print("Attempting new authentication...")
-        token = get_token(BASE_URL,API_KEY,API_SECRET)
+        token = get_token(base_url,api_key,api_secret)
         print("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(API_KEY,token))
-        session_info = authenticate(token,BASE_URL,API_KEY,API_SECRET)
+        session_info = authenticate(token,base_url,api_key,api_secret)
 
         user_name, session = session_info
 
-        save_credentials(SESSION_FILE,user_name,session)
+        save_credentials(session_file,user_name,session)
 
     client = MPDClient()
-    client.connect("{}/.config/mpd/socket".format(str(Path.home())), 6600)
+    client.connect(mpd_host, mpd_port)
     print("Connected to mpd, version: {}".format(client.mpd_version))
 
     try:
-        mpd_watch_track(client)
+        mpd_watch_track(client,session,config)
     except KeyboardInterrupt:
         print("\nKeyboard Interrupt detected - Exiting!")
 

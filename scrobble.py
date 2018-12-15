@@ -438,9 +438,15 @@ if __name__ == "__main__":
     client.connect("{}/.config/mpd/socket".format(str(Path.home())), 6600)
     print("Connected to mpd, version: {}".format(client.mpd_version))
 
-    mpd_watch_track(client)
+    try:
+        mpd_watch_track(client)
+    except KeyboardInterrupt:
+        print("\nKeyboard Interrupt detected - Exiting!")
 
     client.disconnect()
+
+
+
 
 
 

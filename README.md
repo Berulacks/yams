@@ -1,4 +1,4 @@
-# YAMS
+YAMS
 ====
 
 *Yet Another Mpd Scrobbler*

@@ -4,6 +4,7 @@ from pathlib import Path
 import argparse
 import os
 import yaml
+import logging
 
 HOME=str(Path.home())
 LOGGING_ENABLED=False
@@ -32,23 +33,25 @@ DEFAULTS={
         "api_secret":"MISSING"
         }
 
+logger = logging.getLogger("yams")
+
 def write_config_to_file(path,config):
-    print("Writing config...")
+    logger.info("Writing config...")
     with open(path,"w+") as config_stream:
         yaml.dump(config,config_stream,default_flow_style=False,Dumper=yaml.Dumper)
-    print("Config written to: ".format(path))
+    logger.info("Config written to: ".format(path))
 
 def read_from_file(path,working_config):
     try:
         with open(path) as config_stream:
             config = yaml.load(config_stream)
 
-            print("Config found, reading from config at {}...".format(path))
+            logger.info("Config found, reading from config at {}...".format(path))
             for key in config.keys():
                 working_config[key] = config[key]
-                #print("Reading {} from file: {}".format(str(key),str(config[key])))
+                #logger.info("Reading {} from file: {}".format(str(key),str(config[key])))
     except Exception as e:
-        print("Couldn't open config at path {}!: {}".format(path,e))
+        logger.info("Couldn't open config at path {}!: {}".format(path,e))
 
 def get_home_dir():
     home = "."
@@ -68,24 +71,7 @@ def get_home_dir():
     return home
 
 
-def configure():
-
-    #0 Find home directory
-    home = get_home_dir()
-    config_path=str(Path(home,CONFIG_FILE))
-
-    #1 Defaults:
-    config = DEFAULTS
-    config["session_file"] = str(Path(home,DEFAULTS["session_file"]))
-    #2 Environment variables
-    if 'MPD_HOST' in os.environ:
-        config['mpd_host']=os.environ['MPD_HOST']
-    if 'MPD_PORT' in os.environ:
-        config['mpd_port']=os.environ['MPD_PORT']
-    #3 User config
-    read_from_file(config_path,config)
-
-    #4 CLI Arguments
+def process_cli_args():
 
     parser = argparse.ArgumentParser(prog="YAMS", description="Yet Another Mpd Scrobbler",formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-m', '--mpd-host', type=str, help="Your MPD instance's host", metavar='127.0.0.1')
@@ -98,8 +84,71 @@ def configure():
     parser.add_argument('-d', '--allow-duplicate-scrobbles', action='store_true', help='Allow the program to scrobble the same track multiple times in a row? Default: False')
     parser.add_argument('-c', '--config', type=str, help="Your config to read", metavar='~/my_config')
     parser.add_argument('-g', '--generate-config', action='store_true', help='Automatically save/update a configuration file. Good for bootsrapping.')
+    parser.add_argument('-l', '--log-file', type=str, help='Full path to a log file. If not set, a log file called "yams.log" will be placed in the current config directory.', default=None, metavar='/path/to/log')
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+def set_log_file(path,level=logging.INFO):
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # Reset the handlers
+    for handler in logger.handlers:
+        if handler is logging.FileHandler:
+            logger.removeHandler(handler)
+
+    fh = logging.FileHandler(path)
+    fh.setLevel(level)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+def setup_logger(use_stream,use_file,level=logging.INFO):
+
+
+    logger.setLevel(level)
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    if use_file:
+        # create file handler which logs even debug messages
+        home = get_home_dir()
+        path=str(Path(home,"yams.log"))
+
+        if os.path.exists(path):
+            os.remove(path)
+
+        set_log_file(path,level)
+    if use_stream:
+        ch = logging.StreamHandler()
+        ch.setLevel(level)
+        # create formatter and add it to the handlers
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+
+def configure():
+
+    #0 Find home directory and setup logger
+    args = process_cli_args()
+    setup_logger(True,True)
+    home = get_home_dir()
+    config_path=str(Path(home,CONFIG_FILE))
+    if args.log_file:
+        set_log_file(args.log_file)
+
+    #1 Defaults:
+    config = DEFAULTS
+    config["session_file"] = str(Path(home,DEFAULTS["session_file"]))
+    #2 Environment variables
+    if 'MPD_HOST' in os.environ:
+        config['mpd_host']=os.environ['MPD_HOST']
+    if 'MPD_PORT' in os.environ:
+        config['mpd_port']=os.environ['MPD_PORT']
+    #3 User config
+    read_from_file(config_path,config)
+
+    if "log_file" in config:
+        set_log_file(config["log_file"])
+
+    #4 CLI Arguments
 
     if args.mpd_host:
         config['mpd_host']=args.mpd_host
@@ -121,14 +170,17 @@ def configure():
         read_from_file(args.config,config)
     if args.generate_config:
         write_config_to_file(config_path,config)
+    if args.log_file:
+        set_log_file(args.log_file)
+
 
 
     #5 Sanity check
     if( config['mpd_host'] == "" or
         config['api_key'] == "" or
         config['api_secret'] == ""):
-        print("Error! Your config is missing some values. Please check your config. (Note: You can generate a config file with the '-g' flag.")
-        print(config)
+        logger.info("Error! Your config is missing some values. Please check your config. (Note: You can generate a config file with the '-g' flag.")
+        logger.info(config)
         exit(1)
 
     return config

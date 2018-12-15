@@ -6,8 +6,11 @@ from mpd import MPDClient
 import select
 from pathlib import Path
 import time
+import logging
 
 from yams.configure import configure
+
+logger = logging.getLogger("yams")
 
 def sign_signature(parameters,secret=""):
     """
@@ -30,13 +33,13 @@ def sign_signature(parameters,secret=""):
         hasher.update(str(key).encode("utf-8"))
         hasher.update(str(parameters[key]).encode("utf-8"))
         #to_hash += str(key)+str(parameters[key])
-        #print("Hashing: {}".format(str(key)+str(parameters[key])))
+        #logger.info("Hashing: {}".format(str(key)+str(parameters[key])))
 
     if len(secret) > 0:
         hasher.update(secret.encode("utf-8"))
 
     hashed_form = hasher.hexdigest()
-    #print("Signature for call: {}".format(hashed_form))
+    #logger.info("Signature for call: {}".format(hashed_form))
 
     return hashed_form
 
@@ -65,10 +68,10 @@ def make_request(url,parameters,POST=False):
             xml = ET.fromstring(response.text)
             return xml
         except Exception as e:
-            print("Something went wrong parsing the XML. Error: {}. Failing...".format(e))
+            logger.info("Something went wrong parsing the XML. Error: {}. Failing...".format(e))
             return None
-    print("Got a fucked up response! Status: {}, Reason: {}".format(response.status_code, response.reason))
-    print("Response: {}".format(response.text))
+    logger.info("Got a fucked up response! Status: {}, Reason: {}".format(response.status_code, response.reason))
+    logger.info("Response: {}".format(response.text))
     return None
 
 def get_token(url,api_key,api_secret):
@@ -96,7 +99,7 @@ def get_token(url,api_key,api_secret):
     xml = make_request(url, parameters)
 
     token = xml.find("token").text
-    #print("Token: {}".format(token))
+    #logger.info("Token: {}".format(token))
 
     return token
 
@@ -129,7 +132,7 @@ def get_session(url,token,api_key,api_secret):
     session = xml.find("session")
     username = session.find("name").text
     session_key = session.find("key").text
-    #print("Key: {},{}".format(username,session_key))
+    #logger.info("Key: {},{}".format(username,session_key))
 
     return (username,session_key)
 
@@ -154,16 +157,16 @@ def authenticate(token,base_url,api_key,api_secret):
     while session is "":
         input("Press Enter after you've granted scrobble.py permission to access your account...")
         try:
-            print("Grabbing session...")
+            logger.info("Grabbing session...")
             session_info = get_session(base_url,token,api_key,api_secret)
-            print("User: {}".format(session_info[0]))
-            print("Session: {}".format(session_info[1]))
+            logger.info("User: {}".format(session_info[0]))
+            logger.info("Session: {}".format(session_info[1]))
 
             return session_info
         except Exception as e:
-            print("Couldn't grab session, reason: {}".format(e))
+            logger.info("Couldn't grab session, reason: {}".format(e))
             pass
-    print("Something off went wrong...")
+    logger.info("Something off went wrong...")
     exit(0)
 
 def save_credentials(session_filepath, user_name, session_key):
@@ -217,13 +220,13 @@ def now_playing(track_info,url,api_key,api_secret,session_key):
 
     parameters["api_sig"] = sign_signature(parameters,api_secret)
 
-    #print(parameters)
+    #logger.info(parameters)
 
     xml = make_request(url,parameters,True)
-    #print(xml.tag)
+    #logger.info(xml.tag)
     #for child in xml[0]:
-    #    print(child.text)
-    print("Now playing was a success!")
+    #    logger.info(child.text)
+    logger.info("Now playing was a success!")
 
 def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
     """
@@ -243,7 +246,7 @@ def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
     :type api_key: str
     :type api_secret: str
     """
-    print("Scrobbling!")
+    logger.info("Scrobbling!")
     parameters = {
             "method":"track.scrobble",
             "artist": track_info['artist'],
@@ -263,8 +266,8 @@ def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
     parameters["api_sig"] = sign_signature(parameters,api_secret)
 
     xml = make_request(url,parameters,True)
-    print("Scrobbles accepted: {}".format(xml.find("scrobbles").get("accepted")))
-    print("Scrobbling was a success!")
+    logger.info("Scrobbles accepted: {}".format(xml.find("scrobbles").get("accepted")))
+    logger.info("Scrobbling was a success!")
 
 def mpd_wait_for_play(client):
     """
@@ -286,20 +289,20 @@ def mpd_wait_for_play(client):
 
         changes = client.idle("player")
 
-        print("Received event in subsytem: {}".format(changes)) # handle changes
+        logger.info("Received event in subsytem: {}".format(changes)) # handle changes
 
         status = client.status()
-        #print(status)
+        #logger.info(status)
         state = status["state"]
-        print("Received state: {}".format(state))
+        logger.info("Received state: {}".format(state))
 
         if state == "play":
             return True
         return mpd_wait_for_play(client)
 
     except Exception as e:
-        print("Something went wrong waiting on Idle: {}".format(e))
-        print("Exiting...")
+        logger.info("Something went wrong waiting on Idle: {}".format(e))
+        logger.info("Exiting...")
         exit(1)
 
 def mpd_watch_track(client, session, config):
@@ -343,10 +346,10 @@ def mpd_watch_track(client, session, config):
 
             # The time since the song claims it started, that we've been able to measure in python
             real_time_elapsed = reported_start_time + (time.time()-start_time)
-            #print(real_time_elapsed)
+            #logger.info(real_time_elapsed)
 
             song = client.currentsong()
-            #print("Song info: {}".format(song))
+            #logger.info("Song info: {}".format(song))
 
             song_duration = float(song["duration"])
             title = song["title"]
@@ -373,20 +376,20 @@ def mpd_watch_track(client, session, config):
                     # Assuming we might have started late, how many real world seconds do I have to listen to to be able to say I've listened to N% (where N = default_scrobble_threshold) of music? Take that amount of seconds and turn it into its own threshold (added to the aforementioned late start time) and baby you've got a stew going
                     #scrobble_threshold = ( reported_start_time + song_duration * default_scrobble_threshold/100 ) / song_duration * 100
                     scrobble_threshold = (reported_start_time / song_duration * 100) + default_scrobble_threshold
-                    print("While the scrobbling threshold would normally be {}%, since we're starting at {}s (out of {}s, a.k.a. {}%), it's now {}%".format(default_scrobble_threshold,format(reported_start_time,'.1f'),format(song_duration,'.1f'), format(reported_start_time/song_duration*100,'.1f'), format(scrobble_threshold,'.1f')))
+                    logger.info("While the scrobbling threshold would normally be {}%, since we're starting at {}s (out of {}s, a.k.a. {}%), it's now {}%".format(default_scrobble_threshold,format(reported_start_time,'.1f'),format(song_duration,'.1f'), format(reported_start_time/song_duration*100,'.1f'), format(scrobble_threshold,'.1f')))
                 else:
                     scrobble_threshold = default_scrobble_threshold
 
-                #print("Reported start time: {}, real world time: {}".format(reported_start_time,start_time))
-                print("Starting to watch track: {}, currently at: {}/{}s ({}%). Will scrobble in: {}s".format(title,format(elapsed, '.0f'),format(song_duration,'.0f'), format(percent_elapsed, '.1f'), format(( song_duration * scrobble_threshold / 100 ) - elapsed, '.0f'  ) ) )
+                #logger.info("Reported start time: {}, real world time: {}".format(reported_start_time,start_time))
+                logger.info("Starting to watch track: {}, currently at: {}/{}s ({}%). Will scrobble in: {}s".format(title,format(elapsed, '.0f'),format(song_duration,'.0f'), format(percent_elapsed, '.1f'), format(( song_duration * scrobble_threshold / 100 ) - elapsed, '.0f'  ) ) )
                 try:
                     now_playing(song,base_url,api_key,api_secret,session)
                 except Exception as e:
-                    print("Somethings went sending Last.FM 'Now Playing' info!: {}".format(e))
+                    logger.info("Somethings went sending Last.FM 'Now Playing' info!: {}".format(e))
 
             elif current_watched_track == title:
 
-                #print("{}, at: {}%".format(title,format(percent_elapsed, '.2f')))
+                #logger.info("{}, at: {}%".format(title,format(percent_elapsed, '.2f')))
 
                 # Are we above the scrobble threshold? Have we been listening the required amount of time?
                 if percent_elapsed >= scrobble_threshold and elapsed > scrobble_min_time:
@@ -396,12 +399,12 @@ def mpd_watch_track(client, session, config):
                         try:
                             scrobble_track(song,start_time,base_url,api_key,api_secret,session)
                         except Exception as e:
-                            print("Somethings went scrobbling to Last.FM!!: {}".format(e))
+                            logger.info("Somethings went scrobbling to Last.FM!!: {}".format(e))
 
                         if not allow_scrobble_same_song_twice_in_a_row:
                             reject_track = title
                     else:
-                        print("Can't scrobble yet, time elapsed ({}s) < adjustted duration ({}s)".format(real_time_elapsed, 0.5*song_duration))
+                        logger.info("Can't scrobble yet, time elapsed ({}s) < adjustted duration ({}s)".format(real_time_elapsed, 0.5*song_duration))
 
             time.sleep(update_interval)
 
@@ -415,14 +418,14 @@ def find_session(session_file_path,base_url,api_key,api_secret):
             user_name=lines[0].strip()
             session=lines[1].strip()
 
-            print("User: {}, Session: {}".format(user_name, session))
+            logger.info("User: {}, Session: {}".format(user_name, session))
 
     # If not, authenticate again (no harm no foul)
     except Exception as e:
-        print("Couldn't read token file: {}".format(e))
-        print("Attempting new authentication...")
+        logger.info("Couldn't read token file: {}".format(e))
+        logger.info("Attempting new authentication...")
         token = get_token(base_url,api_key,api_secret)
-        print("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(API_KEY,token))
+        logger.info("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(API_KEY,token))
         session_info = authenticate(token,base_url,api_key,api_secret)
 
         user_name, session = session_info
@@ -449,12 +452,12 @@ def cli_run():
 
     client = MPDClient()
     client.connect(mpd_host, mpd_port)
-    print("Connected to mpd, version: {}".format(client.mpd_version))
+    logger.info("Connected to mpd, version: {}".format(client.mpd_version))
 
     try:
         mpd_watch_track(client,session,config)
     except KeyboardInterrupt:
-        print("\nKeyboard Interrupt detected - Exiting!")
+        logger.info("\nKeyboard Interrupt detected - Exiting!")
 
     client.disconnect()
 

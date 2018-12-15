@@ -17,7 +17,8 @@ Sorry for the not-so flushed out README, the program should be rather self expla
 
 Here's the output for `--help`:
 
-```usage: YAMS [-h] [-m 127.0.0.1] [-p 6600] [-s ./.lastfm_session]
+```
+usage: YAMS [-h] [-m 127.0.0.1] [-p 6600] [-s ./.lastfm_session]
             [--api-key wdoqwnd10j2903j013r] [--api-secret oegnapj390rj2q]
             [-t 50] [-r] [-d] [-c ~/my_config] [-g]
 

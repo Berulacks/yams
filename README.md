@@ -42,10 +42,10 @@ optional arguments:
                         percent (default: None)
   -r, --real-time       Use real times when calculating scrobble times? (e.g.
                         how long you've been running the app, not the track
-                        time reported by mpd). Default: True (default: False)
+                        time reported by mpd). Default: True
   -d, --allow-duplicate-scrobbles
                         Allow the program to scrobble the same track multiple
-                        times in a row? Default: False (default: False)
+                        times in a row? Default: False
   -c ~/my_config, --config ~/my_config
                         Your config to read (default: None)
   -g, --generate-config

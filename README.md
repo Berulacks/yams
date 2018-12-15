@@ -76,4 +76,4 @@ optional arguments:
                         Full path to a log file. If not set, a log file called
                         "yams.log" will be placed in the current config
                         directory.
-                        ```
+```

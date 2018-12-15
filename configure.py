@@ -6,6 +6,7 @@ import os
 import yaml
 
 HOME=str(Path.home())
+LOGGING_ENABLED=False
 
 PROGRAM_HOMES=[
         "{}/.config/yams".format(HOME),
@@ -14,6 +15,7 @@ PROGRAM_HOMES=[
         ]
 
 CONFIG_FILE="yams.yml"
+LOG_FILE_NAME="yams.log"
 
 DEFAULTS={
         "scrobble_threshold":50,
@@ -48,9 +50,7 @@ def read_from_file(path,working_config):
     except Exception as e:
         print("Couldn't open config at path {}!: {}".format(path,e))
 
-def configure():
-
-    #0 Find home directory
+def get_home_dir():
     home = "."
 
     # Check for a config first
@@ -64,6 +64,14 @@ def configure():
             if Path(potential_home).exists():
                 home=str(potential_home)
                 break
+
+    return home
+
+
+def configure():
+
+    #0 Find home directory
+    home = get_home_dir()
     config_path=str(Path(home,CONFIG_FILE))
 
     #1 Defaults:

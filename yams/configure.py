@@ -12,6 +12,7 @@ LOGGING_ENABLED=False
 PROGRAM_HOMES=[
         "{}/.config/yams".format(HOME),
         "{}/.yams".format(HOME),
+        '.',
         HOME
         ]
 

@@ -5,6 +5,7 @@ import argparse
 import os
 import yaml
 import logging
+import yams
 
 HOME=str(Path.home())
 LOGGING_ENABLED=False

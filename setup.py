@@ -1,5 +1,6 @@
 #from distutils.core import setup
 from setuptools import setup
+from yams import VERSION
 
 def readme():
     with open('README.md') as f:
@@ -9,7 +10,7 @@ setup(
     name="YAMS",
 
     # Version number (initial):
-    version="0.5",
+    version=VERSION,
 
     # Application author details:
     author="Derin Yarsuvat",

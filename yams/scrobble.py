@@ -9,6 +9,7 @@ import time
 import logging
 
 from yams.configure import configure
+import yams
 
 logger = logging.getLogger("yams")
 
@@ -436,6 +437,7 @@ def find_session(session_file_path,base_url,api_key,api_secret):
 
 def cli_run():
 
+    logger.info("Starting up YAMS v{}".format(yams.VERSION))
     session = ""
     config = configure()
 

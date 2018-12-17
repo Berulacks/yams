@@ -29,7 +29,7 @@ setup(
 
     # Details
     url="https://github.com/berulacks/yams",
-    download_url="https://github.com/Berulacks/yams/releases/download/v0.5/yams-0.5-py3-none-any.whl",
+    download_url="https://github.com/Berulacks/yams/releases/download/{0}/yams-{0}-py3-none-any.whl".format(VERSION),
 
     #
     # license="LICENSE.txt",

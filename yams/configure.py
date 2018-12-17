@@ -12,9 +12,12 @@ LOGGING_ENABLED=False
 PROGRAM_HOMES=[
         "{}/.config/yams".format(HOME),
         "{}/.yams".format(HOME),
+        './.yams',
         '.',
         HOME
         ]
+
+CREATE_IF_NOT_EXISTS_HOME="{}/.config/yams".format(HOME)
 
 CONFIG_FILE="yams.yml"
 LOG_FILE_NAME="yams.log"
@@ -61,15 +64,19 @@ def get_home_dir():
     for potential_home in PROGRAM_HOMES:
         if Path(potential_home,CONFIG_FILE).exists():
             home=str(potential_home)
-            break
-    # If none go for whichever directory actually exists
-    if home == ".":
-        for potential_home in PROGRAM_HOMES:
-            if Path(potential_home).exists():
-                home=str(potential_home)
-                break
+            return home
 
-    return home
+    # If config's found, go for whichever directory actually exists
+    for potential_home in PROGRAM_HOMES:
+        if potential_home != "." and potential_home != HOME and Path(potential_home).exists():
+            home=str(potential_home)
+            return home
+
+    # No custom home directory was found, lets create one
+    home = Path(CREATE_IF_NOT_EXISTS_HOME)
+    home.mkdir(parents=True)
+
+    return str(home)
 
 
 def process_cli_args():

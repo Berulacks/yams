@@ -75,6 +75,7 @@ def get_home_dir():
     # No custom home directory was found, lets create one
     home = Path(CREATE_IF_NOT_EXISTS_HOME)
     home.mkdir(parents=True)
+    write_config_to_file(str(Path(home,CONFIG_FILE)), DEFAULTS)
 
     return str(home)
 

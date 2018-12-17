@@ -154,20 +154,19 @@ def authenticate(token,base_url,api_key,api_secret):
     :rtype: (str,str)
     """
 
-    while session is "":
-        input("Press Enter after you've granted scrobble.py permission to access your account...")
-        try:
-            logger.info("Grabbing session...")
-            session_info = get_session(base_url,token,api_key,api_secret)
-            logger.info("User: {}".format(session_info[0]))
-            logger.info("Session: {}".format(session_info[1]))
+    input("Press Enter after you've granted scrobble.py permission to access your account...")
+    try:
+        logger.info("Grabbing session...")
+        session_info = get_session(base_url,token,api_key,api_secret)
+        logger.info("User: {}".format(session_info[0]))
+        logger.info("Session: {}".format(session_info[1]))
 
-            return session_info
-        except Exception as e:
-            logger.info("Couldn't grab session, reason: {}".format(e))
-            pass
-    logger.info("Something off went wrong...")
-    exit(0)
+        return session_info
+    except Exception as e:
+        logger.info("Couldn't grab session, reason: {}".format(e))
+
+    # Keep looping forever, the program won't be able to do anything without a session, anyway.
+    return authenticate(token,base_url,api_key,api_secret)
 
 def save_credentials(session_filepath, user_name, session_key):
     """Save authentication credentials to disk.
@@ -428,6 +427,7 @@ def find_session(session_file_path,base_url,api_key,api_secret):
         logger.info("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(api_key,token))
         session_info = authenticate(token,base_url,api_key,api_secret)
 
+        print(session_info)
         user_name, session = session_info
 
         save_credentials(session_file_path,user_name,session)

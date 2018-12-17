@@ -425,7 +425,7 @@ def find_session(session_file_path,base_url,api_key,api_secret):
         logger.info("Couldn't read token file: {}".format(e))
         logger.info("Attempting new authentication...")
         token = get_token(base_url,api_key,api_secret)
-        logger.info("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(API_KEY,token))
+        logger.info("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(api_key,token))
         session_info = authenticate(token,base_url,api_key,api_secret)
 
         user_name, session = session_info

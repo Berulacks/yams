@@ -23,7 +23,7 @@ If it can't find one by default, YAMS will create a config file, log, and sessio
 
 YAMS will only create its own directory/configuration file if none of the previous directories exist.
 
-Once run, it'll guide you through the authentication process and save its credentials to the same folder as its config.
+Once run, it'll guide you through the Last.FM authentication process and save its credentials to the same folder as its config.
 
 #### Help
 

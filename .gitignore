@@ -6,3 +6,6 @@ build/
 dist/
 
 .lastfm_session
+
+*.pyc
+*/*.pyc

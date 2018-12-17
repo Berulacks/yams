@@ -68,7 +68,7 @@ def make_request(url,parameters,POST=False):
             xml = ET.fromstring(response.text)
             return xml
         except Exception as e:
-            logger.info("Something went wrong parsing the XML. Error: {}. Failing...".format(e))
+            logger.error("Something went wrong parsing the XML. Error: {}. Failing...".format(e))
             return None
     logger.info("Got a fucked up response! Status: {}, Reason: {}".format(response.status_code, response.reason))
     logger.info("Response: {}".format(response.text))
@@ -163,7 +163,7 @@ def authenticate(token,base_url,api_key,api_secret):
 
         return session_info
     except Exception as e:
-        logger.info("Couldn't grab session, reason: {}".format(e))
+        logger.error("Couldn't grab session, reason: {}".format(e))
 
     # Keep looping forever, the program won't be able to do anything without a session, anyway.
     return authenticate(token,base_url,api_key,api_secret)
@@ -300,8 +300,8 @@ def mpd_wait_for_play(client):
         return mpd_wait_for_play(client)
 
     except Exception as e:
-        logger.info("Something went wrong waiting on Idle: {}".format(e))
-        logger.info("Exiting...")
+        logger.error("Something went wrong waiting on Idle: {}".format(e))
+        logger.error("Exiting...")
         exit(1)
 
 def mpd_watch_track(client, session, config):
@@ -384,7 +384,7 @@ def mpd_watch_track(client, session, config):
                 try:
                     now_playing(song,base_url,api_key,api_secret,session)
                 except Exception as e:
-                    logger.info("Somethings went sending Last.FM 'Now Playing' info!: {}".format(e))
+                    logger.error("Something went wrong sending Last.FM 'Now Playing' info!: {}".format(e))
 
             elif current_watched_track == title:
 
@@ -398,12 +398,12 @@ def mpd_watch_track(client, session, config):
                         try:
                             scrobble_track(song,start_time,base_url,api_key,api_secret,session)
                         except Exception as e:
-                            logger.info("Somethings went scrobbling to Last.FM!!: {}".format(e))
+                            logger.error("Somethings went scrobbling to Last.FM!!: {}".format(e))
 
                         if not allow_scrobble_same_song_twice_in_a_row:
                             reject_track = title
                     else:
-                        logger.info("Can't scrobble yet, time elapsed ({}s) < adjustted duration ({}s)".format(real_time_elapsed, 0.5*song_duration))
+                        logger.warn("Can't scrobble yet, time elapsed ({}s) < adjustted duration ({}s)".format(real_time_elapsed, 0.5*song_duration))
 
             time.sleep(update_interval)
 
@@ -421,7 +421,7 @@ def find_session(session_file_path,base_url,api_key,api_secret):
 
     # If not, authenticate again (no harm no foul)
     except Exception as e:
-        logger.info("Couldn't read token file: {}".format(e))
+        logger.error("Couldn't read token file: {}".format(e))
         logger.info("Attempting new authentication...")
         token = get_token(base_url,api_key,api_secret)
         logger.info("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(api_key,token))

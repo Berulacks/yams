@@ -21,6 +21,7 @@ CREATE_IF_NOT_EXISTS_HOME="{}/.config/yams".format(HOME)
 
 CONFIG_FILE="yams.yml"
 LOG_FILE_NAME="yams.log"
+DEFAULT_SESSION_FILENAME=".lastfm_session"
 
 DEFAULTS={
         "scrobble_threshold":50,
@@ -28,7 +29,6 @@ DEFAULTS={
         "watch_threshold":5,
         "update_interval":1,
         "base_url":"http://ws.audioscrobbler.com/2.0/",
-        "session_file":".lastfm_session",
         "mpd_host":"127.0.0.1",
         "mpd_port":"6600",
         "api_key": "293ef0836603c5c8023ba86eb413794b",
@@ -57,7 +57,31 @@ def read_from_file(path,working_config):
     except Exception as e:
         logger.info("Couldn't open config at path {}!: {}".format(path,e))
 
+def bootstrap_config():
+    """ Creates a config directory and writes a suitable base config into it"""
+
+    # No custom home directory was found, lets create one
+
+    home = Path(CREATE_IF_NOT_EXISTS_HOME)
+    home.mkdir(parents=True)
+
+    default_config=DEFAULTS
+
+    default_config['session_file']=str(Path(home,DEFAULT_SESSION_FILENAME))
+
+    # Lets recognize environment variables by the user
+    if 'MPD_HOST' in os.environ:
+        default_config['mpd_host']=os.environ['MPD_HOST']
+    if 'MPD_PORT' in os.environ:
+        default_config['mpd_port']=os.environ['MPD_PORT']
+
+    write_config_to_file(str(Path(home,CONFIG_FILE)), DEFAULTS)
+
+    return str(home)
+
 def get_home_dir():
+    """ Returns the home directory for YAMS files (not to be confused with your system home directory """
+
     home = "."
 
     # Check for a config first
@@ -73,14 +97,11 @@ def get_home_dir():
             return home
 
     # No custom home directory was found, lets create one
-    home = Path(CREATE_IF_NOT_EXISTS_HOME)
-    home.mkdir(parents=True)
-    write_config_to_file(str(Path(home,CONFIG_FILE)), DEFAULTS)
-
-    return str(home)
+    return bootstrap_config()
 
 
 def process_cli_args():
+    """ Process command line arguments"""
 
     parser = argparse.ArgumentParser(prog="YAMS", description="Yet Another Mpd Scrobbler. Configuration directories are either ~/.config/yams, ~/.yams, or your current working directory. Create one of these paths if need be.")
     parser.add_argument('-m', '--mpd-host', type=str, help="Your MPD instance's host", metavar='127.0.0.1')
@@ -140,12 +161,13 @@ def configure():
     setup_logger(True,True)
     home = get_home_dir()
     config_path=str(Path(home,CONFIG_FILE))
+    #0.1 Immediately check if a log file was passed in via arguments
     if args.log_file:
         set_log_file(args.log_file)
 
     #1 Defaults:
     config = DEFAULTS
-    config["session_file"] = str(Path(home,DEFAULTS["session_file"]))
+    config["session_file"] = str(Path(home,DEFAULT_SESSION_FILENAME))
     #2 Environment variables
     if 'MPD_HOST' in os.environ:
         config['mpd_host']=os.environ['MPD_HOST']
@@ -158,7 +180,6 @@ def configure():
         set_log_file(config["log_file"])
 
     #4 CLI Arguments
-
     if args.mpd_host:
         config['mpd_host']=args.mpd_host
     if args.mpd_port:
@@ -181,8 +202,6 @@ def configure():
         write_config_to_file(config_path,config)
     if args.log_file:
         set_log_file(args.log_file)
-
-
 
     #5 Sanity check
     if( config['mpd_host'] == "" or

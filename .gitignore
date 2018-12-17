@@ -9,3 +9,5 @@ dist/
 
 *.pyc
 */*.pyc
+
+*.egg-info

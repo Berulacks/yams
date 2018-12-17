@@ -19,7 +19,9 @@ The script includes a `yams` script that should be installed with pip. If not, `
 #### Setup
 
 YAMS will use the usual `$MPD_HOST` and `$MPD_PORT` environment variables to connect to `mpd`, if they exist.
-YAMS will create a config file and session file in `$HOME/.config/yams`, however it will also accept config files in `$HOME/.yams` or `./.yams`
+If it can't find one by default, YAMS will create a config file, log, and session file in `$HOME/.config/yams`, however it will also accept config files in `$HOME/.yams` or `./.yams` (theoretically configs in `$HOME` or the current working directory will be read in, as well - but don't do that). 
+
+YAMS will only create its own directory/configuration file if none of the previous directories exist.
 
 Once run, it'll guide you through the authentication process and save its credentials to the same folder as its config.
 

@@ -437,9 +437,9 @@ def find_session(session_file_path,base_url,api_key,api_secret):
 
 def cli_run():
 
-    logger.info("Starting up YAMS v{}".format(yams.VERSION))
     session = ""
     config = configure()
+    logger.info("Starting up YAMS v{}".format(yams.VERSION))
 
     session_file = config["session_file"]
     base_url = config["base_url"]
@@ -459,7 +459,8 @@ def cli_run():
     try:
         mpd_watch_track(client,session,config)
     except KeyboardInterrupt:
-        logger.info("\nKeyboard Interrupt detected - Exiting!")
+        print("")
+        logger.info("Keyboard Interrupt detected - Exiting!")
 
     client.disconnect()
 

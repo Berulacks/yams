@@ -7,8 +7,9 @@ import select
 from pathlib import Path
 import time
 import logging
+import os
 
-from yams.configure import configure
+from yams.configure import configure, remove_log_streams, setup_logger,remove_log_stream_of_type
 import yams
 
 logger = logging.getLogger("yams")
@@ -435,11 +436,43 @@ def find_session(session_file_path,base_url,api_key,api_secret):
 
     return (user_name,session)
 
+def fork(config):
+    try:
+        pid = os.fork()
+        if pid > 0:
+
+            os.setsid()
+            os.umask(0)
+            os.chdir("/")
+
+            try:
+                pid_2 = os.fork()
+                if pid_2 > 0:
+                    if "pid" in config:
+                        logger.info("Forked yams, PID: {}".format(str(pid)))
+                        with open(config["pid"],"w+") as pid_file:
+                            pid_file.writelines(str(pid)+"\n")
+                            logger.info("Wrote PID to file: {}".format(config["pid"]))
+                            exit(0)
+            except Exception as e_2:
+                logger.error("Could not perform second fork to pid! Error: {}".format(e_2))
+            exit(0)
+
+    except Exception as e:
+        logger.error("Could not fork to pid! Error: {}".format(e))
+
+
 def cli_run():
 
     session = ""
     config = configure()
-    logger.info("Starting up YAMS v{}".format(yams.VERSION))
+    logger.info("Starting up YAMS v{}, forking...".format(yams.VERSION))
+    fork(config)
+
+    # Recreating logger
+    #remove_log_streams()
+    #setup_logger(False,True)
+    remove_log_stream_of_type(logging.StreamHandler)
 
     session_file = config["session_file"]
     base_url = config["base_url"]

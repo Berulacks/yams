@@ -119,25 +119,46 @@ def process_cli_args():
 
     return parser.parse_args()
 
+def remove_log_streams():
+    duplicate_handlers = logger.handlers.copy()
+
+    for handler in duplicate_handlers:
+        logger.removeHandler(handler)
+        #logger.info("Removing {}".format(handler))
+
+def remove_log_stream_of_type(handler_type):
+    duplicate_handlers = logger.handlers.copy()
+
+    for handler in duplicate_handlers:
+        if type(handler) == handler_type:
+            logger.removeHandler(handler)
+            logger.info("Removing {}".format(handler))
+
 def set_log_file(path,level=logging.INFO):
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Reset the handlers
-    for handler in logger.handlers:
-        if handler is logging.FileHandler:
-            logger.removeHandler(handler)
+    #remove_log_streams
 
     fh = logging.FileHandler(path)
     fh.setLevel(level)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
+def add_log_stream_output(level=logging.INFO):
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    # create formatter and add it to the handlers
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
 def setup_logger(use_stream,use_file,level=logging.INFO):
 
 
     logger.setLevel(level)
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     if use_file:
         # create file handler which logs even debug messages
@@ -149,11 +170,7 @@ def setup_logger(use_stream,use_file,level=logging.INFO):
 
         set_log_file(path,level)
     if use_stream:
-        ch = logging.StreamHandler()
-        ch.setLevel(level)
-        # create formatter and add it to the handlers
-        ch.setFormatter(formatter)
-        logger.addHandler(ch)
+        add_log_stream_output(level)
 
 def configure():
 
@@ -212,6 +229,7 @@ def configure():
         logger.info(config)
         exit(1)
 
+    config['pid']=str(Path(home,"yams.pid"))
     return config
 
 

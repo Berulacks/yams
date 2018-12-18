@@ -16,7 +16,10 @@ Clone this repo and run `pip3 install -e <path_to_repo>` (omit the `-e` flag if 
 
 The script includes a `yams` script that should be installed with pip. If not found, `python3 -m yams` will do the trick.
 
-`yams` runs as a daemon by default (run as `yams -N` to run in the foreground). Run `yams -k` to kill the current running instance.
+`yams` runs as a daemon by default (`yams -N` will run it in the foreground). 
+`yams -k` will kill the current running instance. 
+`yams -a` will attach to the current running instance's log file, allowing you to watch the daemon.
+`yams -h` will print all the options (also available below)
 
 #### Setup
 
@@ -35,7 +38,7 @@ Here's the output for `--help`:
 usage: YAMS [-h] [-m 127.0.0.1] [-p 6600] [-s ./.lastfm_session]
             [--api-key API_KEY] [--api-secret API_SECRET] [-t 50] [-r] [-d]
             [-c ~/my_config] [-g] [-l /path/to/log] [-N] [-D] [-k]
-            [--disable-log]
+            [--disable-log] [-a]
 
 Yet Another Mpd Scrobbler, v0.2. Configuration directories are either
 ~/.config/yams, ~/.yams, or your current working directory. Create one of
@@ -79,4 +82,8 @@ optional arguments:
   -k, --kill-daemon     Will kill the daemon if running - will fail otherwise.
                         Default: False
   --disable-log         Disable the log? Default: False
+  -a, --attach          Runs "tail -F" on a running instance of yams' log
+                        file. "Attaches" to it, for all intents and purposes.
+                        NB: You will still need to kill it by hand. Default:
+                        False
 ```

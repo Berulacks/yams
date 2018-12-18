@@ -298,6 +298,14 @@ def mpd_wait_for_play(client):
         logger.info("Received state: {}".format(state))
 
         if state == "play":
+            song = client.currentsong()
+
+            song_duration = float(song["duration"])
+            title = song["title"]
+            elapsed = float(status["elapsed"])
+
+            logger.info("Playing {songname}, {elapsed}/{duration}s ({percent_elapsed}%)".format( songname = title, elapsed = format(elapsed,'.0f'), duration = format(song_duration,'.0f'),  percent_elapsed = format(( elapsed / song_duration * 100 ),'.1f') ))
+
             return True
         return mpd_wait_for_play(client)
 

@@ -270,9 +270,6 @@ def configure():
         config["disable_log"] = args.disable_log
     if args.log_file:
         config["log_file"] = args.log_file
-    # Lets never actually save this, as there's no way to undo it from the CLI - keeping this block for readability
-    #if args.no_daemon:
-    #    config['no_daemon']=args.no_daemon
 
     #5 Sanity check
     if( config['mpd_host'] == "" or
@@ -285,6 +282,9 @@ def configure():
     #6 Write the config (if the user has requested it) - the config is final at this point
     if args.generate_config:
         write_config_to_file(config_path,config)
+    #6.1 Lets do this after saving the config, as we don't ever really want to save this to disk
+    if args.no_daemon:
+        config['no_daemon']=args.no_daemon
 
     #7 Kill or not? (We're doing this all the way down here as the user might have defined a non-standard pid in their config file)
     if args.kill_daemon:

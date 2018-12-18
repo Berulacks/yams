@@ -488,12 +488,20 @@ def cli_run():
 
     user_name, session = find_session(session_file,base_url,api_key,api_secret)
 
+    try:
+        client = MPDClient()
+        client.connect(mpd_host, mpd_port)
+        logger.info("Connected to mpd, version: {}".format(client.mpd_version))
+    except Exception as e:
+        logger.error("Could not connect to MPD! Check that your config is correct and that MPD is running. Error: {}".format(e))
+        exit(1)
+
+    # If we're allowed to daemonize, do so
     if "no_daemon" in config and not config["no_daemon"]:
         fork(config)
         remove_log_stream_of_type(logging.StreamHandler)
 
-    client = MPDClient()
-    client.connect(mpd_host, mpd_port)
+    # This is just for the log
     logger.info("Connected to mpd, version: {}".format(client.mpd_version))
 
     try:

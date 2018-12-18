@@ -150,16 +150,20 @@ def is_pid_running(config):
 
 def watch_log(path):
     logger.info("Attaching to {}".format(path))
-    f = subprocess.Popen(['tail','-F',path],\
-            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    run=True
-    while run:
-        try:
-            line = f.stdout.readline()
-            print(line.decode("utf-8").strip())
-        except Exception as e:
-            logger.info("Stream ended: {}".format(e))
-            run=False
+
+    try:
+
+        f = subprocess.Popen(['tail','-F',path],\
+                stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        while True:
+                line = f.stdout.readline()
+                print(line.decode("utf-8").strip())
+
+    except Exception as e:
+        logger.info("Stream ended: {}".format(e))
+    except:
+        print("")
+        logger.info("Stream ended")
     exit(0)
 
 def process_cli_args():

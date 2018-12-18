@@ -14,7 +14,9 @@ Clone this repo and run `pip3 install -e <path_to_repo>` (omit the `-e` flag if 
 
 #### Running
 
-The script includes a `yams` script that should be installed with pip. If not, `python3 -m yams` will do the trick. I recommend running it in the background and following its log output (e.g. `yams &` and then watching the log wiht `tail -F ~/.config/yams/yams.log`).
+The script includes a `yams` script that should be installed with pip. If not found, `python3 -m yams` will do the trick.
+
+`yams` runs as a daemon by default (run as `yams -N` to run in the foreground). Run `yams -k` to kill the current running instance.
 
 #### Setup
 
@@ -27,16 +29,14 @@ Once run, it'll guide you through the Last.FM authentication process and save it
 
 #### Help
 
-Sorry for the not-so flushed out README, the program should be rather self explanatory.
-
 Here's the output for `--help`:
 
 ```
 usage: YAMS [-h] [-m 127.0.0.1] [-p 6600] [-s ./.lastfm_session]
             [--api-key API_KEY] [--api-secret API_SECRET] [-t 50] [-r] [-d]
-            [-c ~/my_config] [-g] [-l /path/to/log]
+            [-c ~/my_config] [-g] [-l /path/to/log] [-N] [-D] [-k]
 
-Yet Another Mpd Scrobbler. Configuration directories are either
+Yet Another Mpd Scrobbler, v0.2. Configuration directories are either
 ~/.config/yams, ~/.yams, or your current working directory. Create one of
 these paths if need be.
 
@@ -70,4 +70,9 @@ optional arguments:
                         Full path to a log file. If not set, a log file called
                         "yams.log" will be placed in the current config
                         directory.
+  -N, --no-daemon       If set to true, program will not be run as a daemon
+                        (e.g. it will run in the foreground) Default: False
+  -D, --debug           Run in Debug mode. Default: False
+  -k, --kill-daemon     Will kill the daemon if running - will fail otherwise.
+                        Default: False
 ```

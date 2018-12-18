@@ -20,7 +20,7 @@ The script includes a `yams` script that should be installed with pip. If not fo
 
 `yams -k` will kill the current running instance. 
 
-`yams -a` will attach to the current running instance's log file, allowing you to watch the daemon.
+`yams -a` will attach to the current running instance's log file, allowing you to watch the daemon's output.
 
 `yams -h` will print all the options (also available below)
 

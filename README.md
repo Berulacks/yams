@@ -16,9 +16,12 @@ Clone this repo and run `pip3 install -e <path_to_repo>` (omit the `-e` flag if 
 
 The script includes a `yams` script that should be installed with pip. If not found, `python3 -m yams` will do the trick.
 
-`yams` runs as a daemon by default (`yams -N` will run it in the foreground). 
+`yams` runs as a daemon by default (`yams -N` will run it in the foreground).
+
 `yams -k` will kill the current running instance. 
+
 `yams -a` will attach to the current running instance's log file, allowing you to watch the daemon.
+
 `yams -h` will print all the options (also available below)
 
 #### Setup

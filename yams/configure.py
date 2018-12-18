@@ -176,13 +176,14 @@ def remove_log_stream_of_type(handler_type):
     for handler in duplicate_handlers:
         if type(handler) == handler_type:
             logger.removeHandler(handler)
-            logger.info("Removed log stream: {}".format(handler))
+            logger.debug("Removed log stream: {}".format(handler))
 
 def set_log_file(path,level=logging.INFO):
 
+    logger.info("Writing log to file: {}".format(path))
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Reset the handlers
-    #remove_log_streams
+    remove_log_stream_of_type(logging.FileHandler)
 
     fh = logging.FileHandler(path)
     fh.setLevel(level)

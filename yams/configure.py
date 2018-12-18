@@ -208,12 +208,9 @@ def configure():
     else:
         log_level = logging.INFO
     # If args.kill_daemon is true we don't want to touch the log file, but we still need to continue setting up incase there's a custom pid file to kill somewhere
-    setup_logger(True,True)
+    setup_logger(True,False,log_level)
     home = get_home_dir()
     config_path=str(Path(home,CONFIG_FILE))
-    #0.1 Immediately check if a log file was passed in via arguments
-    if args.log_file and not args.kill_daemon:
-        set_log_file(args.log_file,log_level)
 
     #1 Defaults:
     config = DEFAULTS
@@ -254,21 +251,34 @@ def configure():
         logger.error(config)
         exit(1)
 
-    if args.generate_config:
-        write_config_to_file(config_path,config)
-
     #6 Final args (path dependent)
     if 'pid_file' not in config:
         config['pid_file']=str(Path(home,DEFAULT_PID_FILENAME))
-    if args.no_daemon:
+    if 'no_daemon' not in config or args.no_daemon:
         config['no_daemon']=args.no_daemon
+    if args.generate_config:
+        write_config_to_file(config_path,config)
+
 
     #7 Kill or not? (We're doing this here as the user might have defined a non-standard pid in their config file)
     if args.kill_daemon:
         kill(config['pid_file'])
 
-    if "log_file" in config and not args.kill_daemon:
-        set_log_file(config["log_file"],log_level)
+    #8 Log file setup (to ensure the previous log isn't deleted)
+    if not args.kill_daemon:
+        log_file_set = False
+        if "log_file" in config:
+            set_log_file(config["log_file"],log_level)
+            log_file_set = True
+        if args.log_file:
+            set_log_file(args.log_file,log_level)
+            log_file_set = True
+        # We should always use a log - if the user hasn't set one at all, go for default
+        if not log_file_set:
+            path=str(Path(home,"yams.log"))
+            if os.path.exists(path):
+                os.remove(path)
+            set_log_file(path,log_level)
 
     return config
 

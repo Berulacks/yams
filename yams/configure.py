@@ -48,7 +48,7 @@ def write_config_to_file(path,config):
     logger.info("Writing config...")
     with open(path,"w+") as config_stream:
         yaml.dump(config,config_stream,default_flow_style=False,Dumper=yaml.Dumper)
-    logger.info("Config written to: ".format(path))
+    logger.info("Config written to: {}".format(path))
 
 def read_from_file(path,working_config):
     try:
@@ -157,7 +157,7 @@ def process_cli_args():
     parser.add_argument('-r', '--real-time', action='store_true', help="Use real times when calculating scrobble times? (e.g. how long you've been running the app, not the track time reported by mpd). Default: True")
     parser.add_argument('-d', '--allow-duplicate-scrobbles', action='store_true', help='Allow the program to scrobble the same track multiple times in a row? Default: False')
     parser.add_argument('-c', '--config', type=str, help="Your config to read", metavar='~/my_config')
-    parser.add_argument('-g', '--generate-config', action='store_true', help='Update configuration with values from the CLI (excluding environment variables)')
+    parser.add_argument('-g', '--generate-config', action='store_true', help='Save the entirety of the running configuration to the config file, including command line arguments. Use this if you always run yams a certain fashion and want that to be the default. Default: False')
     parser.add_argument('-l', '--log-file', type=str, help='Full path to a log file. If not set, a log file called "yams.log" will be placed in the current config directory.', default=None, metavar='/path/to/log')
     parser.add_argument('-N', '--no-daemon', action='store_true', help='If set to true, program will not be run as a daemon (e.g. it will run in the foreground) Default: False')
     parser.add_argument('-D', '--debug', action='store_true', help='Run in Debug mode. Default: False')

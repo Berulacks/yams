@@ -149,7 +149,7 @@ def is_pid_running(config):
     return False
 
 def watch_log(path):
-    logger.info("Attaching to {}".format(path))
+    logger.info("Attaching to {}, press Ctrl-C to exit.".format(path))
 
     try:
 

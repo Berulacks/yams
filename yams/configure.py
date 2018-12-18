@@ -208,7 +208,7 @@ def configure():
     else:
         log_level = logging.INFO
     # If args.kill_daemon is true we don't want to touch the log file, but we still need to continue setting up incase there's a custom pid file to kill somewhere
-    setup_logger(True,False)
+    setup_logger(True,True)
     home = get_home_dir()
     config_path=str(Path(home,CONFIG_FILE))
     #0.1 Immediately check if a log file was passed in via arguments
@@ -260,7 +260,7 @@ def configure():
     #6 Final args (path dependent)
     if 'pid_file' not in config:
         config['pid_file']=str(Path(home,DEFAULT_PID_FILENAME))
-    if 'no_daemon' not in config:
+    if args.no_daemon:
         config['no_daemon']=args.no_daemon
 
     #7 Kill or not? (We're doing this here as the user might have defined a non-standard pid in their config file)

@@ -38,6 +38,8 @@ DEFAULTS={
         "api_secret": "e952c611efe32c66f2b48a93b39d6219",
         "real_time":True,
         "allow_same_track_scrobble_in_a_row":False,
+        "disable_log":False,
+        "no_daemon":False,
         }
 
 logger = logging.getLogger("yams")
@@ -160,6 +162,7 @@ def process_cli_args():
     parser.add_argument('-N', '--no-daemon', action='store_true', help='If set to true, program will not be run as a daemon (e.g. it will run in the foreground) Default: False')
     parser.add_argument('-D', '--debug', action='store_true', help='Run in Debug mode. Default: False')
     parser.add_argument('-k', '--kill-daemon', action='store_true', help='Will kill the daemon if running - will fail otherwise. Default: False')
+    parser.add_argument('--disable-log', action='store_true', help='Disable the log? Default: False')
 
     return parser.parse_args()
 
@@ -219,7 +222,7 @@ def setup_logger(use_stream,use_file,level=logging.INFO):
 
 def configure():
 
-    #0 Find home directory and setup logger
+    #0 Find home directory and setup stream logger. Also find the config directory.
     args = process_cli_args()
     if args.debug:
         log_level = logging.DEBUG
@@ -232,8 +235,10 @@ def configure():
 
     #1 Defaults:
     config = DEFAULTS
+    #1.2 Home dependent defaults:
     config["session_file"] = str(Path(home,DEFAULT_SESSION_FILENAME))
     config["log_file"] = str(Path(home,LOG_FILE_NAME))
+    config['pid_file']=str(Path(home,DEFAULT_PID_FILENAME))
     #2 Environment variables
     if 'MPD_HOST' in os.environ:
         config['mpd_host']=os.environ['MPD_HOST']
@@ -243,6 +248,8 @@ def configure():
     read_from_file(config_path,config)
 
     #4 CLI Arguments
+    if args.config:
+        read_from_file(args.config,config)
     if args.mpd_host:
         config['mpd_host']=args.mpd_host
     if args.mpd_port:
@@ -259,10 +266,13 @@ def configure():
         config["real_time"]=args.real_time
     if args.allow_duplicate_scrobbles:
         config["allow_same_track_scrobble_in_a_row"]=args.allow_duplicate_scrobbles
-    if args.config:
-        read_from_file(args.config,config)
+    if args.disable_log:
+        config["disable_log"] = args.disable_log
     if args.log_file:
-        path = args.log_file
+        config["log_file"] = args.log_file
+    # Lets never actually save this, as there's no way to undo it from the CLI - keeping this block for readability
+    #if args.no_daemon:
+    #    config['no_daemon']=args.no_daemon
 
     #5 Sanity check
     if( config['mpd_host'] == "" or
@@ -272,14 +282,9 @@ def configure():
         logger.error(config)
         exit(1)
 
-    #6 Final args (path dependent)
-    if 'pid_file' not in config:
-        config['pid_file']=str(Path(home,DEFAULT_PID_FILENAME))
-    if 'no_daemon' not in config or args.no_daemon:
-        config['no_daemon']=args.no_daemon
+    #6 Write the config (if the user has requested it) - the config is final at this point
     if args.generate_config:
         write_config_to_file(config_path,config)
-
 
     #7 Kill or not? (We're doing this all the way down here as the user might have defined a non-standard pid in their config file)
     if args.kill_daemon:
@@ -289,7 +294,7 @@ def configure():
     check_old_pid(config)
 
     #9 Log file setup (specifically set after check_old_pid to ensure the previous log isn't deleted accidentally)
-    if not args.kill_daemon:
+    if not args.kill_daemon and not config["disable_log"]:
         # The default
         path=config["log_file"]
         if os.path.exists(path):

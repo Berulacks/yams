@@ -438,23 +438,6 @@ def find_session(session_file_path,base_url,api_key,api_secret):
 
 def fork(config):
     try:
-        if "pid_file" in config and Path(config["pid_file"]).exists():
-            with open(config["pid_file"],"r") as pid_file:
-                pid=int(pid_file.readlines()[0].strip())
-                try:
-                    logger.debug("Attempting to fake kill {}".format(pid))
-                    test=os.kill(pid,0)
-                    logger.error("YAMS is already running on process #{}, kill it before running again!".format(str(pid)))
-                    exit(1)
-                except Exception as e:
-                    logger.debug("Process {} is not running!, Exception: {}".format(str(pid),str(e)))
-                    os.remove(config["pid_file"])
-
-    except Exception as e:
-        logger.debug("Couldn't detect old pid file, continuing. Error: {}".format(e))
-        pass
-
-    try:
         pid = os.fork()
         if pid > 0:
 

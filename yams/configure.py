@@ -123,6 +123,23 @@ def kill(path):
     os.kill(pid,signal.SIGTERM)
     exit(0)
 
+def check_old_pid(config):
+    try:
+        if "pid_file" in config and Path(config["pid_file"]).exists():
+            with open(config["pid_file"],"r") as pid_file:
+                pid=int(pid_file.readlines()[0].strip())
+                try:
+                    logger.debug("Attempting to fake kill {}".format(pid))
+                    test=os.kill(pid,0)
+                    logger.error("YAMS is already running on process #{}, kill it before running again!".format(str(pid)))
+                    exit(1)
+                except Exception as e:
+                    logger.debug("Process {} is not running!, Exception: {}".format(str(pid),str(e)))
+                    os.remove(config["pid_file"])
+
+    except Exception as e:
+        logger.debug("Couldn't detect old pid file, continuing. Error: {}".format(e))
+        pass
 
 
 def process_cli_args():
@@ -264,7 +281,10 @@ def configure():
     if args.kill_daemon:
         kill(config['pid_file'])
 
-    #8 Log file setup (to ensure the previous log isn't deleted)
+    #8 Lets ensure we're not running a second instance of yams
+    check_old_pid(config)
+
+    #9 Log file setup (specifically set after check_old_pid to ensure the previous log isn't deleted accidentally)
     if not args.kill_daemon:
         log_file_set = False
         if "log_file" in config:

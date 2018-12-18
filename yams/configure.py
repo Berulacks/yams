@@ -106,11 +106,16 @@ def kill(path):
 
     try:
         with open(path, "r") as pid_file:
-            pid = pid_file.readlines()[0].strip()
-            logger.warn("Killing process #{pid} and shutting down...".format(pid=pid))
-            pid = int(pid)
+            try:
+                pid = pid_file.readlines()[0].strip()
+                logger.warn("Killing process #{pid} and shutting down...".format(pid=pid))
+                pid = int(pid)
+            except Exception as e:
+                logger.error("Failed to kill process {pid}: {error}".format(pid=str(pid), error=e))
+                logger.warn("Shutting down...")
+                exit(1)
     except Exception as e:
-        logger.error("Failed to kill process {pid}: {error}".format(pid=str(pid), error=e))
+        logger.error("Failed to open pid file {filename}: {error}".format(filename=str(path), error=e))
         logger.warn("Shutting down...")
         exit(1)
 
@@ -203,7 +208,7 @@ def configure():
     else:
         log_level = logging.INFO
     # If args.kill_daemon is true we don't want to touch the log file, but we still need to continue setting up incase there's a custom pid file to kill somewhere
-    setup_logger(True,not args.kill_daemon,log_level)
+    setup_logger(True,False)
     home = get_home_dir()
     config_path=str(Path(home,CONFIG_FILE))
     #0.1 Immediately check if a log file was passed in via arguments
@@ -249,14 +254,14 @@ def configure():
         logger.error(config)
         exit(1)
 
+    if args.generate_config:
+        write_config_to_file(config_path,config)
+
     #6 Final args (path dependent)
     if 'pid_file' not in config:
         config['pid_file']=str(Path(home,DEFAULT_PID_FILENAME))
     if 'no_daemon' not in config:
         config['no_daemon']=args.no_daemon
-
-    if args.generate_config:
-        write_config_to_file(config_path,config)
 
     #7 Kill or not? (We're doing this here as the user might have defined a non-standard pid in their config file)
     if args.kill_daemon:

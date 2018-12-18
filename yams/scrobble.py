@@ -448,6 +448,8 @@ def fork(config):
                     exit(1)
                 except Exception as e:
                     logger.info("Process {} is not running!, Exception: {}".format(str(pid),str(e)))
+                    os.remove(config["pid_file"])
+
     except Exception as e:
         logger.info("Couldn't detect old pid file, continuing. Error: {}".format(e))
         pass

@@ -109,12 +109,14 @@ def kill(path):
             pid = pid_file.readlines()[0].strip()
             logger.warn("Killing process #{pid} and shutting down...".format(pid=pid))
             pid = int(pid)
-            os.kill(pid,signal.SIGTERM)
-            exit(0)
     except Exception as e:
         logger.error("Failed to kill process {pid}: {error}".format(pid=str(pid), error=e))
         logger.warn("Shutting down...")
         exit(1)
+
+    os.remove(path)
+    os.kill(pid,signal.SIGTERM)
+    exit(0)
 
 
 

@@ -35,6 +35,7 @@ Here's the output for `--help`:
 usage: YAMS [-h] [-m 127.0.0.1] [-p 6600] [-s ./.lastfm_session]
             [--api-key API_KEY] [--api-secret API_SECRET] [-t 50] [-r] [-d]
             [-c ~/my_config] [-g] [-l /path/to/log] [-N] [-D] [-k]
+            [--disable-log]
 
 Yet Another Mpd Scrobbler, v0.2. Configuration directories are either
 ~/.config/yams, ~/.yams, or your current working directory. Create one of
@@ -75,4 +76,5 @@ optional arguments:
   -D, --debug           Run in Debug mode. Default: False
   -k, --kill-daemon     Will kill the daemon if running - will fail otherwise.
                         Default: False
+  --disable-log         Disable the log? Default: False
 ```

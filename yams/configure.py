@@ -6,6 +6,7 @@ import os
 import yaml
 import signal
 import logging
+import subprocess
 from yams import VERSION
 
 HOME=str(Path.home())
@@ -125,24 +126,39 @@ def kill(path):
     os.kill(pid,signal.SIGTERM)
     exit(0)
 
-def check_old_pid(config):
+def is_pid_running(config):
     try:
-        if "pid_file" in config and Path(config["pid_file"]).exists():
+        if "pid_file" in config and os.path.exists(config["pid_file"]):
             with open(config["pid_file"],"r") as pid_file:
                 pid=int(pid_file.readlines()[0].strip())
                 try:
                     logger.debug("Attempting to fake kill {}".format(pid))
                     test=os.kill(pid,0)
-                    logger.error("YAMS is already running on process #{}, kill it before running again!".format(str(pid)))
-                    exit(1)
+                    return True
                 except Exception as e:
                     logger.debug("Process {} is not running!, Exception: {}".format(str(pid),str(e)))
-                    os.remove(config["pid_file"])
+                    return False
 
     except Exception as e:
         logger.debug("Couldn't detect old pid file, continuing. Error: {}".format(e))
-        pass
+        return False
+    if not os.path.exists(config["pid_file"]):
+        logger.debug("Could not find pid file at: {}".format(config["pid_file"]))
+    return False
 
+def watch_log(path):
+    logger.info("Attaching to {}".format(path))
+    f = subprocess.Popen(['tail','-F',path],\
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    run=True
+    while run:
+        try:
+            line = f.stdout.readline()
+            print(line.decode("utf-8").strip())
+        except Exception as e:
+            logger.info("Stream ended: {}".format(e))
+            run=False
+    exit(0)
 
 def process_cli_args():
     """ Process command line arguments"""
@@ -163,6 +179,7 @@ def process_cli_args():
     parser.add_argument('-D', '--debug', action='store_true', help='Run in Debug mode. Default: False')
     parser.add_argument('-k', '--kill-daemon', action='store_true', help='Will kill the daemon if running - will fail otherwise. Default: False')
     parser.add_argument('--disable-log', action='store_true', help='Disable the log? Default: False')
+    parser.add_argument('-a', '--attach', action='store_true', help='Runs "tail -F" on a running instance of yams\' log file. "Attaches" to it, for all intents and purposes. NB: You will still need to kill it by hand. Default: False')
 
     return parser.parse_args()
 
@@ -290,10 +307,23 @@ def configure():
     if args.kill_daemon:
         kill(config['pid_file'])
 
-    #8 Lets ensure we're not running a second instance of yams, this will kill the program if we are
-    check_old_pid(config)
+   #8 Attach to a pre-existing log? watch_log ends the program when finished
+    if args.attach:
+        if is_pid_running(config):
+            watch_log(config["log_file"])
+        else:
+            logger.error("Can't connect to running process of yams! Exiting...")
+            exit(1)
 
-    #9 Log file setup (specifically set after check_old_pid to ensure the previous log isn't deleted accidentally)
+    #9 Lets ensure we're not running a second instance of yams, this will kill the program if we are
+    if is_pid_running(config):
+        logger.error("YAMS is already running on process #{}, kill it before running again!".format(str(pid)))
+        exit(1)
+    else:
+        if os.path.exists(config["pid_file"]):
+            os.remove(config["pid_file"])
+
+    #10 Log file setup (specifically set after check_old_pid to ensure the previous log isn't deleted accidentally)
     if not args.kill_daemon and not config["disable_log"]:
         # The default
         path=config["log_file"]

@@ -136,6 +136,7 @@ def process_cli_args():
     parser.add_argument('-g', '--generate-config', action='store_true', help='Update configuration with values from the CLI (excluding environment variables)')
     parser.add_argument('-l', '--log-file', type=str, help='Full path to a log file. If not set, a log file called "yams.log" will be placed in the current config directory.', default=None, metavar='/path/to/log')
     parser.add_argument('-N', '--no-daemon', action='store_true', help='If set to true, program will not be run as a daemon (e.g. it will run in the foreground) Default: False')
+    parser.add_argument('-D', '--debug', action='store_true', help='Run in Debug mode. Default: False')
     parser.add_argument('-k', '--kill-daemon', action='store_true', help='Will kill the daemon if running - will fail otherwise. Default: False')
 
     return parser.parse_args()
@@ -197,13 +198,17 @@ def configure():
 
     #0 Find home directory and setup logger
     args = process_cli_args()
+    if args.debug:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
     # If args.kill_daemon is true we don't want to touch the log file, but we still need to continue setting up incase there's a custom pid file to kill somewhere
-    setup_logger(True,not args.kill_daemon)
+    setup_logger(True,not args.kill_daemon,log_level)
     home = get_home_dir()
     config_path=str(Path(home,CONFIG_FILE))
     #0.1 Immediately check if a log file was passed in via arguments
     if args.log_file and not args.kill_daemon:
-        set_log_file(args.log_file)
+        set_log_file(args.log_file,log_level)
 
     #1 Defaults:
     config = DEFAULTS
@@ -240,8 +245,8 @@ def configure():
     if( config['mpd_host'] == "" or
         config['api_key'] == "" or
         config['api_secret'] == ""):
-        logger.info("Error! Your config is missing some values. Please check your config. (Note: You can generate a config file with the '-g' flag.")
-        logger.info(config)
+        logger.error("Error! Your config is missing some values. Please check your config. (Note: You can generate a config file with the '-g' flag.")
+        logger.error(config)
         exit(1)
 
     #6 Final args (path dependent)
@@ -257,8 +262,8 @@ def configure():
     if args.kill_daemon:
         kill(config['pid_file'])
 
-    if "log_file" in config:
-        set_log_file(config["log_file"])
+    if "log_file" in config and not args.kill_daemon:
+        set_log_file(config["log_file"],log_level)
 
     return config
 

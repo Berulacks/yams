@@ -9,7 +9,7 @@ import time
 import logging
 import os
 
-from yams.configure import configure, remove_log_streams, setup_logger,remove_log_stream_of_type
+from yams.configure import configure, remove_log_stream_of_type
 import yams
 
 logger = logging.getLogger("yams")
@@ -35,13 +35,13 @@ def sign_signature(parameters,secret=""):
         hasher.update(str(key).encode("utf-8"))
         hasher.update(str(parameters[key]).encode("utf-8"))
         #to_hash += str(key)+str(parameters[key])
-        #logger.info("Hashing: {}".format(str(key)+str(parameters[key])))
+        logger.debug("Hashing: {}".format(str(key)+str(parameters[key])))
 
     if len(secret) > 0:
         hasher.update(secret.encode("utf-8"))
 
     hashed_form = hasher.hexdigest()
-    #logger.info("Signature for call: {}".format(hashed_form))
+    logger.debug("Signature for call: {}".format(hashed_form))
 
     return hashed_form
 
@@ -101,7 +101,7 @@ def get_token(url,api_key,api_secret):
     xml = make_request(url, parameters)
 
     token = xml.find("token").text
-    #logger.info("Token: {}".format(token))
+    logger.debug("Token: {}".format(token))
 
     return token
 
@@ -134,7 +134,7 @@ def get_session(url,token,api_key,api_secret):
     session = xml.find("session")
     username = session.find("name").text
     session_key = session.find("key").text
-    #logger.info("Key: {},{}".format(username,session_key))
+    logger.debug("Key: {},{}".format(username,session_key))
 
     return (username,session_key)
 
@@ -350,7 +350,7 @@ def mpd_watch_track(client, session, config):
             #logger.info(real_time_elapsed)
 
             song = client.currentsong()
-            #logger.info("Song info: {}".format(song))
+            logger.debug("Song info: {}".format(song))
 
             song_duration = float(song["duration"])
             title = song["title"]
@@ -381,7 +381,7 @@ def mpd_watch_track(client, session, config):
                 else:
                     scrobble_threshold = default_scrobble_threshold
 
-                #logger.info("Reported start time: {}, real world time: {}".format(reported_start_time,start_time))
+                logger.debug("Reported start time: {}, real world time: {}".format(reported_start_time,start_time))
                 logger.info("Starting to watch track: {}, currently at: {}/{}s ({}%). Will scrobble in: {}s".format(title,format(elapsed, '.0f'),format(song_duration,'.0f'), format(percent_elapsed, '.1f'), format(( song_duration * scrobble_threshold / 100 ) - elapsed, '.0f'  ) ) )
                 try:
                     now_playing(song,base_url,api_key,api_secret,session)
@@ -419,11 +419,11 @@ def find_session(session_file_path,base_url,api_key,api_secret):
             user_name=lines[0].strip()
             session=lines[1].strip()
 
-            logger.info("User: {}, Session: {}".format(user_name, session))
+            logger.debug("User: {}, Session: {}".format(user_name, session))
 
     # If not, authenticate again (no harm no foul)
     except Exception as e:
-        logger.error("Couldn't read token file: {}".format(e))
+        logger.error("Couldn't read session file: {}".format(e))
         logger.info("Attempting new authentication...")
         token = get_token(base_url,api_key,api_secret)
         logger.info("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(api_key,token))
@@ -442,16 +442,16 @@ def fork(config):
             with open(config["pid_file"],"r") as pid_file:
                 pid=int(pid_file.readlines()[0].strip())
                 try:
-                    logger.info("Attempting to kill {}".format(pid))
+                    logger.debug("Attempting to fake kill {}".format(pid))
                     test=os.kill(pid,0)
                     logger.error("YAMS is already running on process #{}, kill it before running again!".format(str(pid)))
                     exit(1)
                 except Exception as e:
-                    logger.info("Process {} is not running!, Exception: {}".format(str(pid),str(e)))
+                    logger.debug("Process {} is not running!, Exception: {}".format(str(pid),str(e)))
                     os.remove(config["pid_file"])
 
     except Exception as e:
-        logger.info("Couldn't detect old pid file, continuing. Error: {}".format(e))
+        logger.debug("Couldn't detect old pid file, continuing. Error: {}".format(e))
         pass
 
     try:
@@ -466,7 +466,7 @@ def fork(config):
                 pid_2 = os.fork()
                 if pid_2 > 0:
                     if "pid_file" in config:
-                        logger.info("Forked yams, PID: {}".format(str(pid)))
+                        logger.debug("Forked yams, PID: {}".format(str(pid)))
                         with open(config["pid_file"],"w+") as pid_file:
                             pid_file.writelines(str(pid)+"\n")
                             logger.info("Wrote PID to file: {}".format(config["pid_file"]))

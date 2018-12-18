@@ -8,6 +8,7 @@ import signal
 import logging
 import subprocess
 from yams import VERSION
+from sys import exit
 
 HOME=str(Path.home())
 LOGGING_ENABLED=False
@@ -132,8 +133,9 @@ def is_pid_running(config):
             with open(config["pid_file"],"r") as pid_file:
                 pid=int(pid_file.readlines()[0].strip())
                 try:
-                    logger.debug("Attempting to fake kill {}".format(pid))
+                    logger.debug("Attempting to fake kill (check if running) process #{}".format(pid))
                     test=os.kill(pid,0)
+                    logger.debug("Process {} is running".format(pid))
                     return True
                 except Exception as e:
                     logger.debug("Process {} is not running!, Exception: {}".format(str(pid),str(e)))
@@ -317,7 +319,7 @@ def configure():
 
     #9 Lets ensure we're not running a second instance of yams, this will kill the program if we are
     if is_pid_running(config):
-        logger.error("YAMS is already running on process #{}, kill it before running again!".format(str(pid)))
+        logger.error("YAMS is already running, kill it before running again!")
         exit(1)
     else:
         if os.path.exists(config["pid_file"]):

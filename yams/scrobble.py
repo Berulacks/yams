@@ -8,6 +8,7 @@ from pathlib import Path
 import time
 import logging
 import os
+from sys import exit
 
 from yams.configure import configure, remove_log_stream_of_type
 import yams

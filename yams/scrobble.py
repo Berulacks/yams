@@ -468,10 +468,6 @@ def cli_run():
     config = configure()
     logger.info("Starting up YAMS v{}".format(yams.VERSION))
 
-    if "no_daemon" in config and not config["no_daemon"]:
-        fork(config)
-        remove_log_stream_of_type(logging.StreamHandler)
-
     session_file = config["session_file"]
     base_url = config["base_url"]
     api_key = config["api_key"]
@@ -482,6 +478,10 @@ def cli_run():
 
 
     user_name, session = find_session(session_file,base_url,api_key,api_secret)
+
+    if "no_daemon" in config and not config["no_daemon"]:
+        fork(config)
+        remove_log_stream_of_type(logging.StreamHandler)
 
     client = MPDClient()
     client.connect(mpd_host, mpd_port)

@@ -4,6 +4,7 @@ from pathlib import Path
 import argparse
 import os
 import yaml
+import signal
 import logging
 from yams import VERSION
 
@@ -23,6 +24,7 @@ CREATE_IF_NOT_EXISTS_HOME="{}/.config/yams".format(HOME)
 CONFIG_FILE="yams.yml"
 LOG_FILE_NAME="yams.log"
 DEFAULT_SESSION_FILENAME=".lastfm_session"
+DEFAULT_PID_FILENAME="yams.pid"
 
 DEFAULTS={
         "scrobble_threshold":50,
@@ -100,6 +102,21 @@ def get_home_dir():
     # No custom home directory was found, lets create one
     return bootstrap_config()
 
+def kill(path):
+
+    try:
+        with open(path, "r") as pid_file:
+            pid = pid_file.readlines()[0].strip()
+            logger.warn("Killing process #{pid} and shutting down...".format(pid=pid))
+            pid = int(pid)
+            os.kill(pid,signal.SIGTERM)
+            exit(0)
+    except Exception as e:
+        logger.error("Failed to kill process {pid}: {error}".format(pid=str(pid), error=e))
+        logger.warn("Shutting down...")
+        exit(1)
+
+
 
 def process_cli_args():
     """ Process command line arguments"""
@@ -116,6 +133,8 @@ def process_cli_args():
     parser.add_argument('-c', '--config', type=str, help="Your config to read", metavar='~/my_config')
     parser.add_argument('-g', '--generate-config', action='store_true', help='Update configuration with values from the CLI (excluding environment variables)')
     parser.add_argument('-l', '--log-file', type=str, help='Full path to a log file. If not set, a log file called "yams.log" will be placed in the current config directory.', default=None, metavar='/path/to/log')
+    parser.add_argument('-N', '--no-daemon', action='store_true', help='If set to true, program will not be run as a daemon (e.g. it will run in the foreground) Default: False')
+    parser.add_argument('-k', '--kill-daemon', action='store_true', help='Will kill the daemon if running - will fail otherwise. Default: False')
 
     return parser.parse_args()
 
@@ -132,7 +151,7 @@ def remove_log_stream_of_type(handler_type):
     for handler in duplicate_handlers:
         if type(handler) == handler_type:
             logger.removeHandler(handler)
-            logger.info("Removing {}".format(handler))
+            logger.info("Removed log stream: {}".format(handler))
 
 def set_log_file(path,level=logging.INFO):
 
@@ -176,11 +195,12 @@ def configure():
 
     #0 Find home directory and setup logger
     args = process_cli_args()
-    setup_logger(True,True)
+    # If args.kill_daemon is true we don't want to touch the log file, but we still need to continue setting up incase there's a custom pid file to kill somewhere
+    setup_logger(True,not args.kill_daemon)
     home = get_home_dir()
     config_path=str(Path(home,CONFIG_FILE))
     #0.1 Immediately check if a log file was passed in via arguments
-    if args.log_file:
+    if args.log_file and not args.kill_daemon:
         set_log_file(args.log_file)
 
     #1 Defaults:
@@ -193,9 +213,6 @@ def configure():
         config['mpd_port']=os.environ['MPD_PORT']
     #3 User config
     read_from_file(config_path,config)
-
-    if "log_file" in config:
-        set_log_file(config["log_file"])
 
     #4 CLI Arguments
     if args.mpd_host:
@@ -216,10 +233,6 @@ def configure():
         config["allow_same_track_scrobble_in_a_row"]=args.allow_duplicate_scrobbles
     if args.config:
         read_from_file(args.config,config)
-    if args.generate_config:
-        write_config_to_file(config_path,config)
-    if args.log_file:
-        set_log_file(args.log_file)
 
     #5 Sanity check
     if( config['mpd_host'] == "" or
@@ -229,7 +242,22 @@ def configure():
         logger.info(config)
         exit(1)
 
-    config['pid']=str(Path(home,"yams.pid"))
+    #6 Final args (path dependent)
+    if 'pid_file' not in config:
+        config['pid_file']=str(Path(home,DEFAULT_PID_FILENAME))
+    if 'no_daemon' not in config:
+        config['no_daemon']=args.no_daemon
+
+    if args.generate_config:
+        write_config_to_file(config_path,config)
+
+    #7 Kill or not? (We're doing this here as the user might have defined a non-standard pid in their config file)
+    if args.kill_daemon:
+        kill(config['pid_file'])
+
+    if "log_file" in config:
+        set_log_file(config["log_file"])
+
     return config
 
 

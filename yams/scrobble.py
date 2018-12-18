@@ -438,6 +438,21 @@ def find_session(session_file_path,base_url,api_key,api_secret):
 
 def fork(config):
     try:
+        if "pid_file" in config and Path(config["pid_file"]).exists():
+            with open(config["pid_file"],"r") as pid_file:
+                pid=int(pid_file.readlines()[0].strip())
+                try:
+                    logger.info("Attempting to kill {}".format(pid))
+                    test=os.kill(pid,0)
+                    logger.error("YAMS is already running on process #{}, kill it before running again!".format(str(pid)))
+                    exit(1)
+                except Exception as e:
+                    logger.info("Process {} is not running!, Exception: {}".format(str(pid),str(e)))
+    except Exception as e:
+        logger.info("Couldn't detect old pid file, continuing. Error: {}".format(e))
+        pass
+
+    try:
         pid = os.fork()
         if pid > 0:
 
@@ -448,11 +463,11 @@ def fork(config):
             try:
                 pid_2 = os.fork()
                 if pid_2 > 0:
-                    if "pid" in config:
+                    if "pid_file" in config:
                         logger.info("Forked yams, PID: {}".format(str(pid)))
-                        with open(config["pid"],"w+") as pid_file:
+                        with open(config["pid_file"],"w+") as pid_file:
                             pid_file.writelines(str(pid)+"\n")
-                            logger.info("Wrote PID to file: {}".format(config["pid"]))
+                            logger.info("Wrote PID to file: {}".format(config["pid_file"]))
                             exit(0)
             except Exception as e_2:
                 logger.error("Could not perform second fork to pid! Error: {}".format(e_2))
@@ -466,13 +481,11 @@ def cli_run():
 
     session = ""
     config = configure()
-    logger.info("Starting up YAMS v{}, forking...".format(yams.VERSION))
-    fork(config)
+    logger.info("Starting up YAMS v{}".format(yams.VERSION))
 
-    # Recreating logger
-    #remove_log_streams()
-    #setup_logger(False,True)
-    remove_log_stream_of_type(logging.StreamHandler)
+    if "no_daemon" in config and not config["no_daemon"]:
+        fork(config)
+        remove_log_stream_of_type(logging.StreamHandler)
 
     session_file = config["session_file"]
     base_url = config["base_url"]

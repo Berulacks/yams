@@ -182,7 +182,7 @@ def set_log_file(path,level=logging.INFO):
 
     logger.info("Writing log to file: {}".format(path))
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # Reset the handlers
+    # Remove old log handlers
     remove_log_stream_of_type(logging.FileHandler)
 
     fh = logging.FileHandler(path)
@@ -208,7 +208,7 @@ def setup_logger(use_stream,use_file,level=logging.INFO):
     if use_file:
         # create file handler which logs even debug messages
         home = get_home_dir()
-        path=str(Path(home,"yams.log"))
+        path=str(Path(home,LOG_FILE_NAME))
 
         if os.path.exists(path):
             os.remove(path)
@@ -233,6 +233,7 @@ def configure():
     #1 Defaults:
     config = DEFAULTS
     config["session_file"] = str(Path(home,DEFAULT_SESSION_FILENAME))
+    config["log_file"] = str(Path(home,LOG_FILE_NAME))
     #2 Environment variables
     if 'MPD_HOST' in os.environ:
         config['mpd_host']=os.environ['MPD_HOST']
@@ -260,6 +261,8 @@ def configure():
         config["allow_same_track_scrobble_in_a_row"]=args.allow_duplicate_scrobbles
     if args.config:
         read_from_file(args.config,config)
+    if args.log_file:
+        path = args.log_file
 
     #5 Sanity check
     if( config['mpd_host'] == "" or
@@ -278,28 +281,20 @@ def configure():
         write_config_to_file(config_path,config)
 
 
-    #7 Kill or not? (We're doing this here as the user might have defined a non-standard pid in their config file)
+    #7 Kill or not? (We're doing this all the way down here as the user might have defined a non-standard pid in their config file)
     if args.kill_daemon:
         kill(config['pid_file'])
 
-    #8 Lets ensure we're not running a second instance of yams
+    #8 Lets ensure we're not running a second instance of yams, this will kill the program if we are
     check_old_pid(config)
 
     #9 Log file setup (specifically set after check_old_pid to ensure the previous log isn't deleted accidentally)
     if not args.kill_daemon:
-        log_file_set = False
-        if "log_file" in config:
-            set_log_file(config["log_file"],log_level)
-            log_file_set = True
-        if args.log_file:
-            set_log_file(args.log_file,log_level)
-            log_file_set = True
-        # We should always use a log - if the user hasn't set one at all, go for default
-        if not log_file_set:
-            path=str(Path(home,"yams.log"))
-            if os.path.exists(path):
-                os.remove(path)
-            set_log_file(path,log_level)
+        # The default
+        path=config["log_file"]
+        if os.path.exists(path):
+            os.remove(path)
+        set_log_file(path,log_level)
 
     return config
 

@@ -16,12 +16,19 @@ Clone this repo and run `pip3 install -e <path_to_repo>` (omit the `-e` flag if 
 
 The script includes a `yams` script that should be installed with pip. If not found, `python3 -m yams` will do the trick.
 
-`yams` runs as a daemon by default (run as `yams -N` to run in the foreground). Run `yams -k` to kill the current running instance.
+`yams` runs as a daemon by default (`yams -N` will run it in the foreground).
+
+`yams -k` will kill the current running instance. 
+
+`yams -a` will attach to the current running instance's log file, allowing you to watch the daemon's output.
+
+`yams -h` will print all the options (also available below)
 
 #### Setup
 
 YAMS will use the usual `$MPD_HOST` and `$MPD_PORT` environment variables to connect to `mpd`, if they exist.
-If it can't find one by default, YAMS will create a config file, log, and session file in `$HOME/.config/yams`, however it will also accept config files in `$HOME/.yams` or `./.yams` (theoretically configs in `$HOME` or the current working directory will be read in, as well - but don't do that). 
+
+If it can't find a config file by default, YAMS will create a config file, log, and session file in `$HOME/.config/yams`, however it will also accept config files in `$HOME/.yams` or `./.yams` (theoretically configs in `$HOME` or the current working directory can be read in, as well - but don't do that). 
 
 YAMS will only create its own directory/configuration file if none of the previous directories exist.
 
@@ -35,7 +42,7 @@ Here's the output for `--help`:
 usage: YAMS [-h] [-m 127.0.0.1] [-p 6600] [-s ./.lastfm_session]
             [--api-key API_KEY] [--api-secret API_SECRET] [-t 50] [-r] [-d]
             [-c ~/my_config] [-g] [-l /path/to/log] [-N] [-D] [-k]
-            [--disable-log]
+            [--disable-log] [-a]
 
 Yet Another Mpd Scrobbler, v0.2. Configuration directories are either
 ~/.config/yams, ~/.yams, or your current working directory. Create one of
@@ -79,4 +86,8 @@ optional arguments:
   -k, --kill-daemon     Will kill the daemon if running - will fail otherwise.
                         Default: False
   --disable-log         Disable the log? Default: False
+  -a, --attach          Runs "tail -F" on a running instance of yams' log
+                        file. "Attaches" to it, for all intents and purposes.
+                        NB: You will still need to kill it by hand. Default:
+                        False
 ```

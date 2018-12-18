@@ -65,8 +65,10 @@ optional arguments:
   -c ~/my_config, --config ~/my_config
                         Your config to read
   -g, --generate-config
-                        Update configuration with values from the CLI
-                        (excluding environment variables)
+                        Save the entirety of the running configuration to the
+                        config file, including command line arguments. Use
+                        this if you always run yams a certain fashion and want
+                        that to be the default. Default: False
   -l /path/to/log, --log-file /path/to/log
                         Full path to a log file. If not set, a log file called
                         "yams.log" will be placed in the current config

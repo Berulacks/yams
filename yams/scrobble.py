@@ -15,10 +15,41 @@ from yams.configure import configure, remove_log_stream_of_type
 import yams
 
 MAX_TRACKS_PER_SCROBBLE=50
-RETRY_INTERVAL=60
+SCROBBLE_RETRY_INTERVAL=10
+SCROBBLE_DISK_SAVE_INTERVAL=1200
 
 logger = logging.getLogger("yams")
-failed_scrobbles = []
+failed_scrobbles = None
+
+SCROBBLES=str(Path(Path.home(),'.config/yams/scrobbles.cache'))
+
+def save_failed_scrobbles_to_disk(path,scrobbles):
+    logger.info("Writing scrobbles to disk...")
+    if os.path.exists(path):
+        os.remove(path)
+
+    with open(path,"w+") as file_stream:
+        yaml.dump({"scrobbles":scrobbles},file_stream,default_flow_style=False,Dumper=yaml.Dumper)
+    logger.info("Failed scrobbles written to: {}".format(path))
+
+def read_failed_scrobbles_from_disk(path):
+
+    if os.path.exists(path):
+        try:
+            with open(path) as scrobbles_file_stream:
+                scrobbles_file = yaml.load(scrobbles_file_stream)
+
+                logger.info("Scrobbles found, reading from file at {}...".format(path))
+                if "scrobbles" in scrobbles_file:
+                    for scrobble in scrobbles_file["scrobbles"]:
+                        for key in scrobble.keys():
+                            logger.debug("[{}]: {}".format(key, scrobble[key]))
+                    return scrobbles_file["scrobbles"]
+        except Exception as e:
+            logger.warn("Couldn't read failed scrobbles file!: {}".format(e))
+    logger.error("Not returnin nothn")
+    return None
+
 
 def sign_signature(parameters,secret=""):
     """
@@ -284,14 +315,16 @@ def scrobble_tracks(tracks,url,api_key,api_secret,session_key):
                 logger.info("Mass scrobbling was a success!")
 
                 tracks.clear()
+                if os.path.exists(SCROBBLES):
+                    os.remove(SCROBBLES)
             else:
                 logger.warn("Failed to scrobble {num_tracks} tracks, queuing for later.".format(num_tracks=len(tracks)))
 
         else:
             logger.warn("Failed to scrobble {num_tracks} tracks, queuing for later.".format(num_tracks=len(tracks)))
     except Exception as e:
-        logger.warn("Failed to scrobble {num_tracks} tracks, queuing for later."
-        logger.debug("Error: {error}".format(num_tracks=len(tracks),error=e)))
+        logger.warn("Failed to scrobble {num_tracks} tracks, queuing for later.")
+        logger.debug("Error: {}".format(e))
 
 
 
@@ -310,7 +343,9 @@ def record_failed_scrobble(track_info,timestamp):
     if "time" in track_info:
         failed_scrobble["duration"]=track_info["time"]
 
-    failed_scrobbles.append(failed_scrobble)
+    if failed_scrobble not in failed_scrobbles:
+        failed_scrobbles.append(failed_scrobble)
+        save_failed_scrobbles_to_disk(SCROBBLES,failed_scrobbles)
 
 
 def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
@@ -402,7 +437,9 @@ def mpd_wait_for_play(client):
 
             logger.info("Playing {songname}, {elapsed}/{duration}s ({percent_elapsed}%)".format( songname = title, elapsed = format(elapsed,'.0f'), duration = format(song_duration,'.0f'),  percent_elapsed = format(( elapsed / song_duration * 100 ),'.1f') ))
 
+            logger.debug("FS2:{}".format(failed_scrobbles))
             return True
+
         return mpd_wait_for_play(client)
 
     except Exception as e:
@@ -420,6 +457,7 @@ def mpd_watch_track(client, session, config):
     :type client: mpd.MPDClient
     :type config: dict
     """
+    logger.debug("FS0:{}".format(failed_scrobbles))
 
     base_url = config["base_url"]
     api_key = config["api_key"]
@@ -442,6 +480,8 @@ def mpd_watch_track(client, session, config):
 
     last_rescrobble_attempt_time = time.time()
 
+    logger.debug("FS1:{}".format(failed_scrobbles))
+
     while mpd_wait_for_play(client):
 
         scrobble_threshold = default_scrobble_threshold
@@ -449,7 +489,8 @@ def mpd_watch_track(client, session, config):
         status = client.status()
         state = status["state"]
 
-        if time.time() - last_rescrobble_attempt_time > RETRY_INTERVAL:
+        if time.time() - last_rescrobble_attempt_time > SCROBBLE_RETRY_INTERVAL:
+            logger.debug("Time's up, attempting mass scrobble with {}".format(failed_scrobbles))
             scrobble_tracks(failed_scrobbles,base_url,api_key,api_secret,session)
             last_rescrobble_attempt_time = time.time()
 
@@ -504,7 +545,12 @@ def mpd_watch_track(client, session, config):
                     # If we're using real time, lets ensure we've been listening this long:
                     if not use_real_time or real_time_elapsed >= (scrobble_threshold/100) * song_duration:
                         current_watched_track = ""
-                        scrobble_track(song,start_time,base_url,api_key,api_secret,session)
+                        if len(failed_scrobbles) < 1:
+                            scrobble_track(song,start_time,base_url,api_key,api_secret,session)
+                        else:
+                            # If we have failed scrobbles, add this one to the list and try to parse the list
+                            record_failed_scrobble(song,start_time)
+                            scrobble_tracks(failed_scrobbles, base_url, api_key, api_secret, session)
 
                         if not allow_scrobble_same_song_twice_in_a_row:
                             reject_track = title
@@ -600,6 +646,13 @@ def cli_run():
     logger.info("Connected to mpd, version: {}".format(client.mpd_version))
 
     try:
+        old_scrobbles = read_failed_scrobbles_from_disk(SCROBBLES)
+        if old_scrobbles:
+            yams.scrobble.failed_scrobbles = old_scrobbles.copy()
+            logger.debug("failed_scrobbles is now: {}".format(yams.scrobble.failed_scrobbles))
+        else:
+            yams.scrobble.failed_scrobbles = []
+
         mpd_watch_track(client,session,config)
     except KeyboardInterrupt:
         print("")

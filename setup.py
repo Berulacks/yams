@@ -7,7 +7,7 @@ def readme():
         return f.read()
 setup(
     # Application name:
-    name="YAMS",
+    name="YAMScrobbler",
 
     # Version number (initial):
     version=VERSION,

@@ -1,7 +1,7 @@
 YAMS
 ====
 
-*Yet Another Mpd Scrobbler (For Last.FM)*
+*Yet Another MPD Scrobbler (For Last.FM)*
 
 YAMS is exactly what its name says it is.
 
@@ -114,6 +114,6 @@ optional arguments:
 - YAMS will try to re-send failed scrobbles every minute during playback, or on every subsequent scrobble. YAMS does not try to re-send failed "Now Playing" requests
 - YAMS will wait on MPD's idle() command *only* when not playing a track. The `update_interval` configruation option controls the rate, in seconds, at which YAMS polls MPD for the currently playing track.
 - YAMS suppresses most error messages by default, run with `--debug` to see them all.
-- `-g` is pretty useful, you should probably use it once to not have to keep typing in command line parameters
+- `-g` is pretty useful, you should probably use it once to not have to keep typing in command line parameters.
 - Windows support is not guaranteed. YAMS works fine under Elementary OS Juno and OS X Mojave (presumably all variants of Linux and OSX with python3 should work fine).
 - YAMS is developed with Python `3.7`, if you're encountering a bug with a lower version, report it.

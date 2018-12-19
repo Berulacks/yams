@@ -23,7 +23,7 @@ Clone this repo and run `pip3 install -e <path_to_repo>` (omit the `-e` flag if 
 
 #### Running
 
-The script includes a `yams` script that should be installed with pip.
+The script includes a `yams` script that will be installed by pip.
 
 `yams` runs as a daemon by default (`yams -N` will run it in the foreground).
 

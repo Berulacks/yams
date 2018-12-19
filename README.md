@@ -19,6 +19,10 @@ YAMS is just a normal Last.FM scrobbler. But, if you *really* need to know, it c
 `PyYAML` and `python-mpd2` are required. YAMS is written for `python3` *only*.
 
 #### Installation
+##### Via Pip
+Run `pip3 install YAMScrobbler` (or maybe just `pip`, depending on your system)
+
+##### From Source
 Clone this repo and run `pip3 install -e <path_to_repo>` (omit the `-e` flag if you don't want changes in the repo to be reflected in your local installation).
 
 #### Running

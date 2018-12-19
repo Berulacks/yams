@@ -7,13 +7,18 @@ import select
 from pathlib import Path
 import time
 import logging
+import yaml
 import os
 from sys import exit
 
 from yams.configure import configure, remove_log_stream_of_type
 import yams
 
+MAX_TRACKS_PER_SCROBBLE=50
+RETRY_INTERVAL=60
+
 logger = logging.getLogger("yams")
+failed_scrobbles = []
 
 def sign_signature(parameters,secret=""):
     """
@@ -46,7 +51,7 @@ def sign_signature(parameters,secret=""):
 
     return hashed_form
 
-def make_request(url,parameters,POST=False):
+def make_request(url,parameters,POST=False,debug=False):
     """
     Make a generic GET or POST request to an URL, and parse its resultant XML. Can throw an exception.
     :param url: The URL to make the request to
@@ -65,6 +70,9 @@ def make_request(url,parameters,POST=False):
         response = requests.get(url,parameters)
     else:
         response = requests.post(url,data=parameters)
+
+    if debug:
+        logger.debug(response.text)
 
     if response.ok:
         try:
@@ -224,11 +232,86 @@ def now_playing(track_info,url,api_key,api_secret,session_key):
 
     #logger.info(parameters)
 
-    xml = make_request(url,parameters,True)
-    #logger.info(xml.tag)
-    #for child in xml[0]:
-    #    logger.info(child.text)
-    logger.info("Now playing was a success!")
+    try:
+        xml = make_request(url,parameters,True)
+        #logger.info(xml.tag)
+        #for child in xml[0]:
+        #    logger.info(child.text)
+        logger.info("Now playing was a success!")
+    except Exception as e:
+        logger.warn("Could not send now playing Last.FM!")
+        logger.debug("Error: {}".format(e))
+
+def scrobble_tracks(tracks,url,api_key,api_secret,session_key):
+
+    # Sanity check
+    if len(tracks) < 1:
+        logger.debug("Failed sanity check for scrobble tracks")
+        return
+
+    logger.info("Attempting mass scroble for {} tracks!".format(len(tracks)))
+    parameters = {
+            "method":"track.scrobble",
+            "api_key": api_key,
+            "sk": session_key,
+            }
+
+    max_scrobbles = MAX_TRACKS_PER_SCROBBLE if len(tracks) > MAX_TRACKS_PER_SCROBBLE else len(tracks)
+
+    for i in range(0,max_scrobbles):
+        logger.debug("Adding {} to mass scrobble request.".format(tracks[i]))
+        parameters["track[{}]".format(i)]= tracks[i]["title"]
+        parameters["artist[{}]".format(i)]= tracks[i]["artist"]
+        parameters["timestamp[{}]".format(i)]= tracks[i]["timestamp"]
+        if "album" in tracks[i]:
+            parameters["album[{}]".format(i)]= tracks[i]["album"]
+        if "trackNumber" in tracks[i]:
+            parameters["trackNumber[{}]".format(i)]= tracks[i]["trackNumber"]
+        if "duration" in tracks[i]:
+            parameters["duration[{}]".format(i)]= tracks[i]["duration"]
+
+    parameters["api_sig"] = sign_signature(parameters,api_secret)
+
+    try:
+        xml = make_request(url,parameters,True)
+        if xml:
+            logger.debug("Received response: [{}] - {}".format(xml.tag,xml.attrib))
+            logger.debug("XML Received for mass scrobble: {}".format(ET.tostring(xml, encoding="utf-8").decode("utf-8")))
+
+            accepted = int(xml.find("scrobbles").get("accepted"))
+            if accepted > 0:
+                logger.info("Scrobbles accepted: {}".format(accepted))
+                logger.info("Mass scrobbling was a success!")
+
+                tracks.clear()
+            else:
+                logger.warn("Failed to scrobble {num_tracks} tracks, queuing for later.".format(num_tracks=len(tracks)))
+
+        else:
+            logger.warn("Failed to scrobble {num_tracks} tracks, queuing for later.".format(num_tracks=len(tracks)))
+    except Exception as e:
+        logger.warn("Failed to scrobble {num_tracks} tracks, queuing for later."
+        logger.debug("Error: {error}".format(num_tracks=len(tracks),error=e)))
+
+
+
+
+def record_failed_scrobble(track_info,timestamp):
+    failed_scrobble = {
+            "artist": track_info['artist'],
+            "title": track_info["title"],
+            "timestamp":timestamp
+            }
+
+    if "album" in track_info:
+        failed_scrobble["album"]=track_info["album"]
+    if "track" in track_info:
+        failed_scrobble["trackNumber"]=track_info["track"]
+    if "time" in track_info:
+        failed_scrobble["duration"]=track_info["time"]
+
+    failed_scrobbles.append(failed_scrobble)
+
 
 def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
     """
@@ -267,9 +350,21 @@ def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
 
     parameters["api_sig"] = sign_signature(parameters,api_secret)
 
-    xml = make_request(url,parameters,True)
-    logger.info("Scrobbles accepted: {}".format(xml.find("scrobbles").get("accepted")))
-    logger.info("Scrobbling was a success!")
+    try:
+        xml = make_request(url,parameters,True)
+    except Exception as e:
+        logger.error("Something went wrong with the scrobble request.")
+        logger.debug("Error: {}".format(e))
+        xml = False
+
+    if xml:
+        logger.info("Scrobbles accepted: {}".format(xml.find("scrobbles").get("accepted")))
+        logger.info("Scrobbling was a success!")
+
+        logger.debug("XML Received for scrobble: {}".format(ET.tostring(xml, encoding="utf-8").decode("utf-8")))
+    else:
+        logger.warn("Failed to scrobble {song_title}, queuing for later.".format(song_title=track_info['title']))
+        record_failed_scrobble(track_info,timestamp)
 
 def mpd_wait_for_play(client):
     """
@@ -345,12 +440,18 @@ def mpd_watch_track(client, session, config):
     start_time = time.time()
     reported_start_time = 0
 
+    last_rescrobble_attempt_time = time.time()
+
     while mpd_wait_for_play(client):
 
         scrobble_threshold = default_scrobble_threshold
 
         status = client.status()
         state = status["state"]
+
+        if time.time() - last_rescrobble_attempt_time > RETRY_INTERVAL:
+            scrobble_tracks(failed_scrobbles,base_url,api_key,api_secret,session)
+            last_rescrobble_attempt_time = time.time()
 
         if state == "play":
 
@@ -359,7 +460,7 @@ def mpd_watch_track(client, session, config):
             #logger.info(real_time_elapsed)
 
             song = client.currentsong()
-            logger.debug("Song info: {}".format(song))
+            #logger.debug("Song info: {}".format(song))
 
             song_duration = float(song["duration"])
             title = song["title"]
@@ -392,10 +493,7 @@ def mpd_watch_track(client, session, config):
 
                 logger.debug("Reported start time: {}, real world time: {}".format(reported_start_time,start_time))
                 logger.info("Starting to watch track: {}, currently at: {}/{}s ({}%). Will scrobble in: {}s".format(title,format(elapsed, '.0f'),format(song_duration,'.0f'), format(percent_elapsed, '.1f'), format(( song_duration * scrobble_threshold / 100 ) - elapsed, '.0f'  ) ) )
-                try:
-                    now_playing(song,base_url,api_key,api_secret,session)
-                except Exception as e:
-                    logger.error("Something went wrong sending Last.FM 'Now Playing' info!: {}".format(e))
+                now_playing(song,base_url,api_key,api_secret,session)
 
             elif current_watched_track == title:
 
@@ -406,10 +504,7 @@ def mpd_watch_track(client, session, config):
                     # If we're using real time, lets ensure we've been listening this long:
                     if not use_real_time or real_time_elapsed >= (scrobble_threshold/100) * song_duration:
                         current_watched_track = ""
-                        try:
-                            scrobble_track(song,start_time,base_url,api_key,api_secret,session)
-                        except Exception as e:
-                            logger.error("Somethings went scrobbling to Last.FM!!: {}".format(e))
+                        scrobble_track(song,start_time,base_url,api_key,api_secret,session)
 
                         if not allow_scrobble_same_song_twice_in_a_row:
                             reject_track = title

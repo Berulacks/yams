@@ -324,7 +324,7 @@ def scrobble_tracks(tracks,url,api_key,api_secret,session_key):
     return False
 
 
-def record_failed_scrobble(track_info,timestamp,failed_scrobbles):
+def record_failed_scrobble(track_info,timestamp,failed_scrobbles,cache_file_path):
     failed_scrobble = {
             "artist": track_info['artist'],
             "title": track_info["title"],
@@ -340,7 +340,7 @@ def record_failed_scrobble(track_info,timestamp,failed_scrobbles):
 
     if failed_scrobble not in failed_scrobbles:
         failed_scrobbles.append(failed_scrobble)
-        save_failed_scrobbles_to_disk(SCROBBLES,failed_scrobbles)
+        save_failed_scrobbles_to_disk(cache_file_path,failed_scrobbles)
 
 
 def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
@@ -475,7 +475,9 @@ def mpd_watch_track(client, session, config):
     current_watched_track = ""
     reject_track=""
 
-    failed_scrobbles = read_failed_scrobbles_from_disk(SCROBBLES)
+    cache_file_path = config["cache_file"]
+
+    failed_scrobbles = read_failed_scrobbles_from_disk(cache_file_path)
 
     # For use with `use_real_time` parameter
     start_time = time.time()
@@ -495,7 +497,7 @@ def mpd_watch_track(client, session, config):
             if len(failed_scrobbles)>0:
                 scrobble_succeeded = scrobble_tracks(failed_scrobbles,base_url,api_key,api_secret,session)
                 if scrobble_succeeded:
-                    clear_pending_scrobbles_list(failed_scrobbles,SCROBBLES)
+                    clear_pending_scrobbles_list(failed_scrobbles,cache_file_path)
             last_rescrobble_attempt_time = time.time()
 
         if state == "play":
@@ -554,14 +556,14 @@ def mpd_watch_track(client, session, config):
                             scrobble_succeeded = scrobble_track(song,start_time,base_url,api_key,api_secret,session)
                             # If we've failed, add it to the list for future scrobbles (and write it to the disk)
                             if not scrobble_succeeded:
-                                record_failed_scrobble(song,start_time,failed_scrobbles)
+                                record_failed_scrobble(song,start_time,failed_scrobbles,cache_file_path)
                         else:
                             # If we have failed and queued up scrobbles, add this one to the list and try to do them all in one go
-                            record_failed_scrobble(song,start_time,failed_scrobbles)
+                            record_failed_scrobble(song,start_time,failed_scrobbles,cache_file_path)
                             scrobble_succeeded =  scrobble_tracks(failed_scrobbles, base_url, api_key, api_secret, session)
                             # If we were successful clean up the scrobble file
                             if scrobble_succeeded:
-                                clear_pending_scrobbles_list(failed_scrobbles,SCROBBLES)
+                                clear_pending_scrobbles_list(failed_scrobbles,cache_file_path)
 
                         if not allow_scrobble_same_song_twice_in_a_row:
                             reject_track = title

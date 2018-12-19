@@ -27,6 +27,7 @@ CONFIG_FILE="yams.yml"
 LOG_FILE_NAME="yams.log"
 DEFAULT_SESSION_FILENAME=".lastfm_session"
 DEFAULT_PID_FILENAME="yams.pid"
+DEFAULT_CACHE_FILENAME="scrobbles.cache"
 
 DEFAULTS={
         "scrobble_threshold":50,
@@ -181,6 +182,7 @@ def process_cli_args():
     parser.add_argument('-c', '--config', type=str, help="Your config to read", metavar='~/my_config')
     parser.add_argument('-g', '--generate-config', action='store_true', help='Save the entirety of the running configuration to the config file, including command line arguments. Use this if you always run yams a certain fashion and want that to be the default. Default: False')
     parser.add_argument('-l', '--log-file', type=str, help='Full path to a log file. If not set, a log file called "yams.log" will be placed in the current config directory.', default=None, metavar='/path/to/log')
+    parser.add_argument('-c', '--cache-file', type=str, help='Full path to the scrobbles cache file. This stores failed scrobbles for upload at a later date. If not set, a log file called "scrobbles.cache" will be placed in the current config directory.', default=None, metavar='/path/to/cache')
     parser.add_argument('-N', '--no-daemon', action='store_true', help='If set to true, program will not be run as a daemon (e.g. it will run in the foreground) Default: False')
     parser.add_argument('-D', '--debug', action='store_true', help='Run in Debug mode. Default: False')
     parser.add_argument('-k', '--kill-daemon', action='store_true', help='Will kill the daemon if running - will fail otherwise. Default: False')
@@ -262,6 +264,7 @@ def configure():
     config["session_file"] = str(Path(home,DEFAULT_SESSION_FILENAME))
     config["log_file"] = str(Path(home,LOG_FILE_NAME))
     config['pid_file']=str(Path(home,DEFAULT_PID_FILENAME))
+    config['cache_file']=str(Path(home,DEFAULT_CACHE_FILENAME))
     #2 Environment variables
     if 'MPD_HOST' in os.environ:
         config['mpd_host']=os.environ['MPD_HOST']
@@ -293,6 +296,8 @@ def configure():
         config["disable_log"] = args.disable_log
     if args.log_file:
         config["log_file"] = args.log_file
+    if args.cache_file:
+        config["cache_file"] = args.cache_file
 
     #5 Sanity check
     if( config['mpd_host'] == "" or

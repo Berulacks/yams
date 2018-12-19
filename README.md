@@ -8,21 +8,22 @@ YAMS is exactly what its name says it is.
 #### Features
 YAMS is just a normal Last.FM scrobbler. But, if you *really* need to know, it can do the following:
 
-* Authentication with Last.FM API v2.0 - without need to input/store your username/password locally.
+* Authentication with Last.FM [Scrobbling API v2.0](https://www.last.fm/api/scrobbling) - without need to input/store your username/password locally.
+* Last.FM's "Now Playing" [API](https://www.last.fm/api/show/track.updateNowPlaying)
 * Saving failed scrobbles to a disk and uploading at a later date.
-* Timing configuration (e.g. scrobble percentage, real world timing values for scrobbling).
+* Timing configuration (e.g. scrobble percentage, real world timing values for scrobbling, etc.).
 * Preventing accidental duplicate scrobbles on rewind/playback restart/etc.
 * Automatic daemonization and config file generation.
 
 #### Requirements
-`PyYAML` and `python-mpd2` are required.
+`PyYAML` and `python-mpd2` are required. YAMS is written for `python3` *only*.
 
 #### Installation
-Clone this repo and run `pip3 install -e <path_to_repo>` (omit the `-e` flag if you don't want changes in the repo to be reflected in your local installation)
+Clone this repo and run `pip3 install -e <path_to_repo>` (omit the `-e` flag if you don't want changes in the repo to be reflected in your local installation).
 
 #### Running
 
-The script includes a `yams` script that should be installed with pip. If not found, `python3 -m yams` will do the trick.
+The script includes a `yams` script that should be installed with pip.
 
 `yams` runs as a daemon by default (`yams -N` will run it in the foreground).
 
@@ -32,13 +33,15 @@ The script includes a `yams` script that should be installed with pip. If not fo
 
 `yams -h` will print all the options (also available below).
 
+ *NB: (If you can't access the `yams` script, maybe because pip's script install directory isn't in your `$PATH` or something, `python3 -m yams` will also do the trick.)*
+
 #### Setup
 
 YAMS will use the usual `$MPD_HOST` and `$MPD_PORT` environment variables to connect to `mpd`, if they exist.
 
 Run `yams` and follow the printed instructions to authenticate with Last.FM
 
-###### Configuration Files
+##### Configuration Files
 
 If it can't find a config file by default, YAMS will create a default config file, log, cache, and session file in `$HOME/.config/yams`, however it will also accept config files in `$HOME/.yams` or `./.yams` (theoretically configs in `$HOME` or the current working directory can be read in, as well). 
 
@@ -107,3 +110,10 @@ optional arguments:
                         False
 
 ```
+#### Other Information
+- YAMS will try to re-send failed scrobbles every minute during playback, or on every subsequent scrobble. YAMS does not try to re-send failed "Now Playing" requests
+- YAMS will wait on MPD's idle() command *only* when not playing a track. The `update_interval` configruation option controls the rate, in seconds, at which YAMS polls MPD for the currently playing track.
+- YAMS suppresses most error messages by default, run with `--debug` to see them all.
+- `-g` is pretty useful, you should probably use it once to not have to keep typing in command line parameters
+- Windows support is not guaranteed. YAMS works fine under Elementary OS Juno and OS X Mojave (presumably all variants of Linux and OSX with python3 should work fine).
+- YAMS is developed with Python `3.7`, if you're encountering a bug with a lower version, report it.

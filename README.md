@@ -8,7 +8,7 @@ YAMS is exactly what its name says it is.
 #### Features
 YAMS is just a normal Last.FM scrobbler. But, if you *really* need to know, it can do the following:
 
-* Authentication with rhe new Last.FM [Scrobbling API v2.0](https://www.last.fm/api/scrobbling) - without need to input/store your username/password locally.
+* Authentication with the new Last.FM [Scrobbling API v2.0](https://www.last.fm/api/scrobbling) - without need to input/store your username/password locally.
 * Update your profile's "Now Playing" track via Last.FM's "Now Playing" [API](https://www.last.fm/api/show/track.updateNowPlaying)
 * Saving failed scrobbles to a disk and uploading at a later date.
 * Timing configuration (e.g. scrobble percentage, real world timing values for scrobbling, etc.).

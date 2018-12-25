@@ -34,5 +34,5 @@ fi
 
 # If we made it here it means the user just wants to forward their
 # args to the python script (and, well, execute it)
-# What? It's easier than typing "python -m jira_issue_selector"
+# What? It's easier than typing "python -m yams"
 $PYTHON_BINARY -m yams $@

@@ -664,8 +664,13 @@ def cli_run():
     except KeyboardInterrupt:
         print("")
         logger.info("Keyboard Interrupt detected - Exiting!")
+    except Exception:
+        logger.exception("Something went very wrong!")
 
-    client.disconnect()
+    try:
+        client.disconnect()
+    except:
+        logger.warn("Could not gracefully disconnect from Mpd...")
 
 
 if __name__ == "__main__":

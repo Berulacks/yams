@@ -3,6 +3,7 @@
 import requests, hashlib
 import xml.etree.ElementTree as ET
 from mpd import MPDClient
+from mpd.base import ConnectionError
 import select
 from pathlib import Path
 import time
@@ -445,9 +446,8 @@ def mpd_wait_for_play(client):
         return mpd_wait_for_play(client)
 
     except Exception as e:
-        logger.error("Something went wrong waiting on Idle: {}".format(e))
-        logger.error("Exiting...")
-        exit(1)
+        logger.error("Something went wrong waiting on MPD's Idle event: {}".format(e))
+        return False
 
 def mpd_watch_track(client, session, config):
     """
@@ -625,6 +625,14 @@ def fork(config):
         logger.error("Could not fork to pid! Error: {}".format(e))
 
 
+def connect_to_mpd(host,port):
+    """Connect to MPD, throws an exception if failed"""
+
+    client = MPDClient()
+    client.connect(host, port)
+    logger.info("Connected to mpd, version: {}".format(client.mpd_version))
+    return client
+
 def cli_run():
 
     session = ""
@@ -642,10 +650,9 @@ def cli_run():
 
     user_name, session = find_session(session_file,base_url,api_key,api_secret)
 
+
     try:
-        client = MPDClient()
-        client.connect(mpd_host, mpd_port)
-        logger.info("Connected to mpd, version: {}".format(client.mpd_version))
+        client = connect_to_mpd(mpd_host,mpd_port)
     except Exception as e:
         logger.error("Could not connect to MPD! Check that your config is correct and that MPD is running. Error: {}".format(e))
         exit(1)
@@ -655,22 +662,43 @@ def cli_run():
         fork(config)
         remove_log_stream_of_type(logging.StreamHandler)
 
-    # This is just for the log
-    logger.info("Connected to mpd, version: {}".format(client.mpd_version))
+    RECONNECT_TIMEOUT=10
 
-    try:
-
-        mpd_watch_track(client,session,config)
-    except KeyboardInterrupt:
-        print("")
-        logger.info("Keyboard Interrupt detected - Exiting!")
-    except Exception:
-        logger.exception("Something went very wrong!")
+    while True:
+        if client:
+            try:
+                mpd_watch_track(client,session,config)
+            # User is in no-daemon mode and wants to exit
+            except KeyboardInterrupt:
+                print("")
+                logger.info("Keyboard Interrupt detected - Exiting!")
+                break
+            # A connection error implies we lost connection with MPD - lets retry unless the user kills us
+            except ConnectionError as e:
+                logger.error("Received an MPD Connection error!: {}".format(e))
+                logger.info("YAMS will keep trying to reconnect to MPD, every {} seconds.".format(RECONNECT_TIMEOUT))
+                client.disconnect()
+                client=None
+            # If we receive an unknown exception lets exit, as this is undefined behaviour
+            except Exception:
+                logger.exception("Something went very wrong!")
+                break
+        else:
+            time.sleep(RECONNECT_TIMEOUT)
+            try:
+                client = connect_to_mpd(mpd_host,mpd_port)
+            except Exception as e:
+                # Don't know if this is cached anywhere - could cause some large log files so I'm leaving it commented out until I know more.
+                #logger.debug("Could not connect to MPD! Check that your config is correct and that MPD is running. Error: {}".format(e))
+                pass
 
     try:
         client.disconnect()
     except:
         logger.warn("Could not gracefully disconnect from Mpd...")
+
+    logger.info("Shutting down...")
+    exit(0)
 
 
 if __name__ == "__main__":

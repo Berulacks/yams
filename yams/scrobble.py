@@ -677,7 +677,6 @@ def cli_run():
             except ConnectionError as e:
                 logger.error("Received an MPD Connection error!: {}".format(e))
                 logger.info("YAMS will keep trying to reconnect to MPD, every {} seconds.".format(RECONNECT_TIMEOUT))
-                client.disconnect()
                 client=None
             # If we receive an unknown exception lets exit, as this is undefined behaviour
             except Exception:
@@ -693,7 +692,7 @@ def cli_run():
                 pass
 
     try:
-        client.disconnect()
+        client.close()
     except:
         logger.warn("Could not gracefully disconnect from Mpd...")
 

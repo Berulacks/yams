@@ -60,7 +60,7 @@ Here's the output for `--help`:
                 [-g] [-l /path/to/log] [-c /path/to/cache] [-C ~/my_config] [-N]
                 [-D] [-k] [--disable-log] [-a]
 
-    Yet Another Mpd Scrobbler, v0.2. Configuration directories are either
+    Yet Another Mpd Scrobbler, v0.5. Configuration directories are either
     ~/.config/yams, ~/.yams, or your current working directory. Create one of
     these paths if need be.
 
@@ -115,6 +115,7 @@ Here's the output for `--help`:
 #### Other Information
 - YAMS will try to re-send failed scrobbles every minute during playback, or on every subsequent scrobble. YAMS does not try to re-send failed "Now Playing" requests
 - YAMS will wait on MPD's idle() command *only* when not playing a track. The `update_interval` configruation option controls the rate, in seconds, at which YAMS polls MPD for the currently playing track.
+- YAMS will not crash when an MPD connection is lost but will attempt to re-connect every 10 seconds. Kill the daemon if this behaviour is undesirable, though the reconnect behaviour shouldn't significantly affect system resources.
 - YAMS suppresses most error messages by default, run with `--debug` to see them all.
 - `-g` is pretty useful, you should probably use it once to not have to keep typing in command line parameters.
 - Windows support is not guaranteed. YAMS works fine under Elementary OS Juno and OS X Mojave (presumably all variants of Linux and OSX with python3 should work fine).

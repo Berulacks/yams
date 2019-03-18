@@ -38,9 +38,7 @@ setup(
     long_description=readme(),
     long_description_content_type='text/markdown',
 
-    scripts=[
-        'bin/yams'
-        ],
+    entry_points= { 'console_scripts': [ 'yams = yams.scrobble:cli_run' ] },
 
     # Dependent packages (distributions)
     install_requires=[

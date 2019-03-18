@@ -608,6 +608,16 @@ def find_session(session_file_path,base_url,api_key,api_secret):
 
     return (user_name,session)
 
+def save_pid(file_path, pid=None):
+
+    # If we're not being passed a pid to save, lets save the current process' pid
+    if pid == None:
+        pid = os.getpid()
+
+    with open(file_path,"w+") as pid_file:
+        pid_file.writelines(str(pid)+"\n")
+        logger.info("Wrote PID to file: {}".format(file_path))
+
 def fork(config):
     try:
         pid = os.fork()
@@ -622,10 +632,8 @@ def fork(config):
                 if pid_2 > 0:
                     if "pid_file" in config:
                         logger.debug("Forked yams, PID: {}".format(str(pid)))
-                        with open(config["pid_file"],"w+") as pid_file:
-                            pid_file.writelines(str(pid)+"\n")
-                            logger.info("Wrote PID to file: {}".format(config["pid_file"]))
-                            exit(0)
+                        save_pid(config["pid_file"],pid)
+                        exit(0)
             except Exception as e_2:
                 logger.error("Could not perform second fork to pid! Error: {}".format(e_2))
             exit(0)
@@ -667,9 +675,13 @@ def cli_run():
         exit(1)
 
     # If we're allowed to daemonize, do so
-    if "no_daemon" in config and not config["no_daemon"]:
-        fork(config)
-        remove_log_stream_of_type(logging.StreamHandler)
+    if "no_daemon" in config:
+        if not config["no_daemon"]:
+            fork(config)
+            remove_log_stream_of_type(logging.StreamHandler)
+        # NOTE: Uncomment these if you want to save a PID file even while running in -N mode
+        #elif config["no_daemon"] and "pid_file" in config:
+        #    save_pid(config["pid_file"])
 
     RECONNECT_TIMEOUT=10
 

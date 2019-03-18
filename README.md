@@ -39,6 +39,12 @@ The script includes a `yams` script that will be installed by pip.
 
  *NB: (If you can't access the `yams` script, maybe because pip's script install directory isn't in your `$PATH` or something, `python3 -m yams` will also do the trick.)*
 
+##### Via Systemd
+
+A Systemd user service unit file is included in the root of this repository (named `yams.service`). This can be used to automate starting/stopping YAMS on startup, for a specific user.
+
+To install, copy it to `~/.config/systemd/user/` and run `systemctl --user enable --now yams` to enable/start it. Note that you should also [start mpd as a Systemd service](https://wiki.archlinux.org/index.php/Music_Player_Daemon#Autostart_with_systemd) to ensure YAMS actually loads up at the right time.
+
 #### Setup
 
 YAMS will use the usual `$MPD_HOST` and `$MPD_PORT` environment variables to connect to `mpd`, if they exist.

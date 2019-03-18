@@ -680,8 +680,8 @@ def cli_run():
             fork(config)
             remove_log_stream_of_type(logging.StreamHandler)
         # NOTE: Uncomment these if you want to save a PID file even while running in -N mode
-        #elif config["no_daemon"] and "pid_file" in config:
-        #    save_pid(config["pid_file"])
+        elif config["no_daemon"] and "pid_file" in config:
+            save_pid(config["pid_file"])
 
     RECONNECT_TIMEOUT=10
 

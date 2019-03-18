@@ -38,7 +38,12 @@ setup(
     long_description=readme(),
     long_description_content_type='text/markdown',
 
-    entry_points= { 'console_scripts': [ 'yams = yams.scrobble:cli_run' ] },
+    # Does not work - when using the easy_install entry point attempting to fork() results in a "[Errno 1] Operation not permitted" error
+    #entry_points= { 'console_scripts': [ 'yams = yams.__main__:main' ] },
+
+    scripts=[
+    'bin/yams'
+    ],
 
     # Dependent packages (distributions)
     install_requires=[

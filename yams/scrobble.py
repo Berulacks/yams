@@ -520,7 +520,10 @@ def mpd_watch_track(client, session, config):
             #logger.debug("Song info: {}".format(song))
 
             song_duration = float(song["duration"])
-            title = song["title"]
+            if "title" in song:
+                title = song["title"]
+            else:
+                title = ""
 
             elapsed = float(status["elapsed"])
 
@@ -528,6 +531,7 @@ def mpd_watch_track(client, session, config):
             percent_elapsed = elapsed / song_duration * 100
 
             if (current_watched_track != title and # Is this a new track to watch?
+                title != "" and # And this track actually has a title
                 title != reject_track and # And it's not a track to be rejected
                 percent_elapsed < scrobble_threshold and # And it's below the scrobble threshold
                 real_time_elapsed > watch_threshold and # And it's REALLY passed 5 seconds?

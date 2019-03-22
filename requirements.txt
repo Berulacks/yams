@@ -1,2 +1,4 @@
-python-mpd2==1.0.0
-PyYAML==4.2b4
+requests==2.21.0
+setuptools==40.8.0
+python_mpd2==1.0.0
+PyYAML==5.1

@@ -6,7 +6,8 @@ After=mpd.service
 
 [Service]
 Type=simple
-ExecStart=/path/to/yams -N
+# Note: Please update this to your installed yams binary's path, if necessary
+ExecStart=/usr/bin/yams -N
 
 [Install]
 WantedBy=default.target

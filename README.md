@@ -22,6 +22,9 @@ YAMS is just a normal Last.FM scrobbler. But, if you *really* need to know, it c
 ##### Via Pip
 Run `pip3 install YAMScrobbler` (or maybe just `pip`, depending on your system)
 
+##### Via the AUR
+If you're an Arch Linux user you may use the [python-yams](https://aur.archlinux.org/packages/python-yams/) package in the [AUR](https://aur.archlinux.org/) to install YAMS locally. Please see [here](https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages) for instructions if you're new to AUR packages.
+
 ##### From Source
 Clone this repo and run `pip3 install -e <path_to_repo>` (omit the `-e` flag if you don't want changes in the repo to be reflected in your local installation).
 

@@ -9,7 +9,7 @@ license=('GPL3')
 depends=('python' 'mpd' 'python-pyaml' 'python-mpd2', 'python-requests')
 makedepends=('python-setuptools')
 source=("https://github.com/Berulacks/yams/archive/$pkgver.tar.gz")
-sha256sums=("SKIP")
+sha256sums=("fb8145708e35560d0cd868318466433770ba302a3bf84b907ec0206f54869e47")
 
 build() {
 	cd "$srcdir/yams-$pkgver"

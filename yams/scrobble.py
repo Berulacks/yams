@@ -254,7 +254,10 @@ def now_playing(track_info,url,api_key,api_secret,session_key):
     if "album" in track_info:
         parameters["album"]=track_info["album"]
     if "track" in track_info:
-        parameters["trackNumber"]=track_info["track"]
+        if isinstance(track_info["track"], list):
+            parameters["trackNumber"]=track_info["track"][0]
+        else:
+            parameters["trackNumber"]=track_info["track"]
     if "time" in track_info:
         parameters["duration"]=track_info["time"]
 
@@ -335,7 +338,11 @@ def record_failed_scrobble(track_info,timestamp,failed_scrobbles,cache_file_path
     if "album" in track_info:
         failed_scrobble["album"]=track_info["album"]
     if "track" in track_info:
-        failed_scrobble["trackNumber"]=track_info["track"]
+        if isinstance(track_info["track"], list):
+            failed_scrobble["trackNumber"]=track_info["track"][0]
+        else:
+            failed_scrobble["trackNumber"]=track_info["track"]
+
     if "time" in track_info:
         failed_scrobble["duration"]=track_info["time"]
 
@@ -375,7 +382,12 @@ def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
     if "album" in track_info:
         parameters["album"]=track_info["album"]
     if "track" in track_info:
-        parameters["trackNumber"]=track_info["track"]
+        # Sometimes we'll have duplicate track numbers and this will return a list
+        # I blame beets, dammit my library
+        if isinstance(track_info["track"], list):
+            parameters["trackNumber"]=track_info["track"][0]
+        else:
+            parameters["trackNumber"]=track_info["track"]
     if "time" in track_info:
         parameters["duration"]=track_info["time"]
 

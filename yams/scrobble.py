@@ -96,13 +96,14 @@ def make_request(url,parameters,POST=False,debug=False):
     :rtype: xml.etree.ElementTree
     """
 
+    logger.debug("Making request to '{}':\n'{}'".format(url,parameters))
+
     if not POST:
         response = requests.get(url,parameters)
     else:
         response = requests.post(url,data=parameters)
 
-    if debug:
-        logger.debug(response.text)
+    logger.debug("Response: {}".format(response.text))
 
     if response.ok:
         try:
@@ -225,6 +226,30 @@ def save_credentials(session_filepath, user_name, session_key):
         session_file.write(str(user_name)+"\n")
         session_file.write(str(session_key)+"\n")
 
+def extract_single(container,key):
+    """
+    Sometimes mpd will report an array inside its track info (e.g. 3 artists instead of 1)
+    In cases like these it makes sense to always extract the first, this function does that.
+    Also prevents crashing if something's gone wrong.
+
+    :param container: The dictionary being searched
+    :param key: The key to use in the dict
+
+    :type container: dict
+    :type key: object
+
+    :rtype: object
+    """
+
+    if key in container:
+        if isinstance(container[key], list):
+            first_match = container[key][0]
+            logger.warn("Found multiple instances of key '{}', returning first match: {}".format(key,first_match))
+            logger.debug("Container of the key ('{}') in question: {}".format(key,container))
+            return first_match
+        return container[key]
+    return ""
+
 def now_playing(track_info,url,api_key,api_secret,session_key):
     """
     Send your currently playing track's info to Last.FM
@@ -244,22 +269,19 @@ def now_playing(track_info,url,api_key,api_secret,session_key):
 
     parameters = {
             "method":"track.updateNowPlaying",
-            "artist": track_info['artist'],
-            "track": track_info["title"],
+            "artist": extract_single(track_info,'artist'),
+            "track": extract_single(track_info,'title'),
             "context": "mpd",
             "api_key": api_key,
             "sk": session_key,
             }
 
     if "album" in track_info:
-        parameters["album"]=track_info["album"]
+        parameters["album"]=extract_single(track_info,"album")
     if "track" in track_info:
-        if isinstance(track_info["track"], list):
-            parameters["trackNumber"]=track_info["track"][0]
-        else:
-            parameters["trackNumber"]=track_info["track"]
+        parameters["trackNumber"]=extract_single(track_info, "track")
     if "time" in track_info:
-        parameters["duration"]=track_info["time"]
+        parameters["duration"]=extract_single(track_info,"time")
 
     parameters["api_sig"] = sign_signature(parameters,api_secret)
 
@@ -293,15 +315,16 @@ def scrobble_tracks(tracks,url,api_key,api_secret,session_key):
 
     for i in range(0,max_scrobbles):
         logger.debug("Adding {} to mass scrobble request.".format(tracks[i]))
-        parameters["track[{}]".format(i)]= tracks[i]["title"]
-        parameters["artist[{}]".format(i)]= tracks[i]["artist"]
-        parameters["timestamp[{}]".format(i)]= tracks[i]["timestamp"]
+        # We probably don't need to use the extract_single's, here, but better safe than sorry!
+        parameters["track[{}]".format(i)]= extract_single(tracks[i],"title")
+        parameters["artist[{}]".format(i)]= extract_single(tracks[i],"artist")
+        parameters["timestamp[{}]".format(i)]= extract_single(tracks[i],"timestamp")
         if "album" in tracks[i]:
-            parameters["album[{}]".format(i)]= tracks[i]["album"]
+            parameters["album[{}]".format(i)]= extract_single(tracks[i],"album")
         if "trackNumber" in tracks[i]:
-            parameters["trackNumber[{}]".format(i)]= tracks[i]["trackNumber"]
+            parameters["trackNumber[{}]".format(i)]= extract_single(tracks[i],"trackNumber")
         if "duration" in tracks[i]:
-            parameters["duration[{}]".format(i)]= tracks[i]["duration"]
+            parameters["duration[{}]".format(i)]= extract_single(tracks[i],"duration")
 
     parameters["api_sig"] = sign_signature(parameters,api_secret)
 
@@ -330,21 +353,17 @@ def scrobble_tracks(tracks,url,api_key,api_secret,session_key):
 
 def record_failed_scrobble(track_info,timestamp,failed_scrobbles,cache_file_path):
     failed_scrobble = {
-            "artist": track_info['artist'],
-            "title": track_info["title"],
+            "artist": extract_single(track_info,'artist'),
+            "title": extract_single(track_info,"title"),
             "timestamp":timestamp
             }
 
     if "album" in track_info:
-        failed_scrobble["album"]=track_info["album"]
+        failed_scrobble["album"]=extract_single(track_info,"album")
     if "track" in track_info:
-        if isinstance(track_info["track"], list):
-            failed_scrobble["trackNumber"]=track_info["track"][0]
-        else:
-            failed_scrobble["trackNumber"]=track_info["track"]
-
+        failed_scrobble["trackNumber"]=extract_single(track_info,"track")
     if "time" in track_info:
-        failed_scrobble["duration"]=track_info["time"]
+        failed_scrobble["duration"]=extract_single(track_info,"time")
 
     if failed_scrobble not in failed_scrobbles:
         failed_scrobbles.append(failed_scrobble)
@@ -372,24 +391,21 @@ def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
     logger.info("Scrobbling!")
     parameters = {
             "method":"track.scrobble",
-            "artist": track_info['artist'],
+            "artist": extract_single(track_info,'artist'),
             "timestamp": timestamp,
-            "track": track_info["title"],
+            "track": extract_single(track_info,"title"),
             "api_key": api_key,
             "sk": session_key,
             }
 
     if "album" in track_info:
-        parameters["album"]=track_info["album"]
+        parameters["album"]=extract_single(track_info,"album")
     if "track" in track_info:
         # Sometimes we'll have duplicate track numbers and this will return a list
         # I blame beets, dammit my library
-        if isinstance(track_info["track"], list):
-            parameters["trackNumber"]=track_info["track"][0]
-        else:
-            parameters["trackNumber"]=track_info["track"]
+        parameters["trackNumber"]=extract_single(track_info,"track")
     if "time" in track_info:
-        parameters["duration"]=track_info["time"]
+        parameters["duration"]=extract_single(track_info,"time")
 
     parameters["api_sig"] = sign_signature(parameters,api_secret)
 

@@ -81,7 +81,7 @@ def sign_signature(parameters,secret=""):
 
     return hashed_form
 
-def make_request(url,parameters,POST=False,debug=False):
+def make_request(url,parameters,POST=False):
     """
     Make a generic GET or POST request to an URL, and parse its resultant XML. Can throw an exception.
     :param url: The URL to make the request to
@@ -256,15 +256,15 @@ def now_playing(track_info,url,api_key,api_secret,session_key):
 
     :param track_info: The track's info from mpd
     :param url: The base Last.FM API url
-    :param token: Your token
     :param api_key: Your API key
-    :param api_secret: Your AP secret (given to you when you got your API key)
+    :param api_secret: Your API secret (given to you when you got your API key)
+    :param session_key: Your Last.FM session key
 
     :type track_info: dict
     :type url: str
-    :type token: str
     :type api_key: str
     :type api_secret: str
+    :type session_key: str
     """
 
     parameters = {
@@ -298,6 +298,25 @@ def now_playing(track_info,url,api_key,api_secret,session_key):
         logger.debug("Error: {}".format(e))
 
 def scrobble_tracks(tracks,url,api_key,api_secret,session_key):
+    """
+    Attempts to scrobble multiple tracks at once to Last.FM
+
+    :param tracks: The list of failed scrobbles, in the form of the scrobbles cache
+    :param url: The base Last.FM API url
+    :param api_key: Your API key
+    :param api_secret: Your API secret (given to you when you got your API key)
+    :param session_key: Your Last.FM session key
+
+    :type tracks: list
+    :type url: str
+    :type api_key: str
+    :type api_secret: str
+    :type session_key: str
+
+    :return: Returns a tuple of (accepted count of scrobbles, submitted count of scrobbles). This will not always be the same as the amount of scrobbles you sent in, so you should truncate your cache accordingly.
+    :rtype: (int,int)
+    """
+
 
     # Sanity check
     if len(tracks) < 1:
@@ -352,6 +371,20 @@ def scrobble_tracks(tracks,url,api_key,api_secret,session_key):
 
 
 def record_failed_scrobble(track_info,timestamp,failed_scrobbles,cache_file_path):
+    """
+    Adds a failed scrobble to the cached list of failed scrobbles, and writes them all to disk.
+
+    :param track_info: A dictionary of track information from mpd
+    :param timestamp: A UNIX timestamp of when this track was listened to
+    :param failed_scrobbles: The list of failed scrobbles to append this to
+    :param cache_file_path: The file path of the scrobbles cache (to write to disk)
+
+    :type track_info: dict
+    :type timestamp: str
+    :type failed_scrobbles: list
+    :type cache_file_path: str
+    """
+
     failed_scrobble = {
             "artist": extract_single(track_info,'artist'),
             "title": extract_single(track_info,"title"),
@@ -377,16 +410,16 @@ def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
     :param track_info: The track's info from mpd
     :param timestamp: The starting time of the track, as a UTC Unix Timestamp (seconds since the Epoch)
     :param url: The base Last.FM API url
-    :param token: Your token
     :param api_key: Your API key
-    :param api_secret: Your AP secret (given to you when you got your API key)
+    :param api_secret: Your API secret (given to you when you got your API key)
+    :param session_key: Your Last.FM session key
 
     :type track_info: dict
     :param timestamp: int
     :type url: str
-    :type token: str
     :type api_key: str
     :type api_secret: str
+    :type session_key: str
     """
     logger.info("Scrobbling!")
     parameters = {
@@ -427,6 +460,21 @@ def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
     return False
 
 def truncate_pending_scrobbles_list(count, scrobbles, path_to_cache):
+    """
+    Removes 'count' number of scrobbles from the current cached list and then writes to disk if necessary.
+
+    :param count: The number of scrobbles to remove
+    :param scrobbles: The list of cached scrobbles to remove from
+    :param path_to_cache: The path to the cached scrobbles file, if a write to disk is necessary
+
+    :type count: int
+    :type scrobbles: list
+    :type path_to_cache: str
+
+    :return: The truncated list of scrobbles, or an empty list (if the count to remove was larger than the length of the scrobbles list)
+    :rtype: list
+    """
+
     if count >= len(scrobbles):
         logger.debug("Removing all ({}/{}) scrobbles from cache".format(count, len(scrobbles)))
 
@@ -492,9 +540,11 @@ def mpd_watch_track(client, session, config):
     The main loop - watches MPD and tracks the currently playing song. Sends Last.FM updates if need be.
 
     :param client: The MPD client object
+    :param session: The Session key for last.fm
     :param config: The global config file
 
     :type client: mpd.MPDClient
+    :type session: str
     :type config: dict
     """
 
@@ -615,6 +665,20 @@ def mpd_watch_track(client, session, config):
 
 
 def find_session(session_file_path,base_url,api_key,api_secret):
+    """
+    Try to read a saved last.fm session from disk, or create a new one.
+
+    :param session_file_path: The path to the session file to be read or written to.
+    :param base_url: The base_url of the scrobble 2.0 API
+    :param api_key: This program's last.fm API key
+    :param api_secret: This program's last.fm API secret
+
+    :type session_file_path: str
+    :type base_url: str
+    :type api_key: str
+    :type api_secret: str
+    """
+
     # Try to read a saved session...
     try:
         with open(session_file_path) as session_f_stream:
@@ -641,6 +705,15 @@ def find_session(session_file_path,base_url,api_key,api_secret):
     return (user_name,session)
 
 def save_pid(file_path, pid=None):
+    """
+    Save a given pid to disk
+
+    :param file_path: The path to save the pid to
+    :param pid: The (optional) pid to save. If no pid is provided we get the current running program's pid
+
+    :type file_path: str
+    :type pid: int
+    """
 
     # If we're not being passed a pid to save, lets save the current process' pid
     if pid == None:
@@ -651,6 +724,13 @@ def save_pid(file_path, pid=None):
         logger.info("Wrote PID to file: {}".format(file_path))
 
 def fork(config):
+    """
+    Fork's the current running program into a new instance.
+
+    :param config: The YAMS config file
+    :type config: dict
+    """
+
     try:
         pid = os.fork()
         if pid > 0:
@@ -683,6 +763,7 @@ def connect_to_mpd(host,port):
     return client
 
 def cli_run():
+    """ Command line entrypoint """
 
     session = ""
     config = configure()

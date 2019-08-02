@@ -37,7 +37,7 @@ def read_failed_scrobbles_from_disk(path):
     if os.path.exists(path):
         try:
             with open(path) as scrobbles_file_stream:
-                scrobbles_file = yaml.load(scrobbles_file_stream)
+                scrobbles_file = yaml.load(scrobbles_file_stream, Loader=yaml.FullLoader)
 
                 logger.info("Scrobbles found, reading from file at {}...".format(path))
                 if "scrobbles" in scrobbles_file:

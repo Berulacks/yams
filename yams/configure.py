@@ -56,7 +56,7 @@ def write_config_to_file(path,config):
 def read_from_file(path,working_config):
     try:
         with open(path) as config_stream:
-            config = yaml.load(config_stream)
+            config = yaml.load(config_stream, Loader=yaml.FullLoader)
 
             logger.info("Config found, reading from config at {}...".format(path))
             for key in config.keys():

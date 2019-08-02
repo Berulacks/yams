@@ -229,7 +229,7 @@ def save_credentials(session_filepath, user_name, session_key):
 def extract_single(container,key):
     """
     Sometimes mpd will report an array inside its track info (e.g. 3 artists instead of 1)
-    In cases like these it makes sense to always extract the first, this function does that.
+In cases like these it makes sense to always extract the first, this function does that.
     Also prevents crashing if something's gone wrong.
 
     :param container: The dictionary being searched
@@ -280,7 +280,11 @@ def now_playing(track_info,url,api_key,api_secret,session_key):
         parameters["album"]=extract_single(track_info,"album")
     if "track" in track_info:
         parameters["trackNumber"]=extract_single(track_info, "track")
-    if "time" in track_info:
+    if "duration" in track_info:
+        parameters["duration"]=extract_single(track_info,"duration")
+    # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
+    # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
+    elif "time" in track_info:
         parameters["duration"]=extract_single(track_info,"time")
 
     parameters["api_sig"] = sign_signature(parameters,api_secret)
@@ -338,12 +342,18 @@ def scrobble_tracks(tracks,url,api_key,api_secret,session_key):
         parameters["track[{}]".format(i)]= extract_single(tracks[i],"title")
         parameters["artist[{}]".format(i)]= extract_single(tracks[i],"artist")
         parameters["timestamp[{}]".format(i)]= extract_single(tracks[i],"timestamp")
+
         if "album" in tracks[i]:
             parameters["album[{}]".format(i)]= extract_single(tracks[i],"album")
         if "trackNumber" in tracks[i]:
             parameters["trackNumber[{}]".format(i)]= extract_single(tracks[i],"trackNumber")
+
         if "duration" in tracks[i]:
             parameters["duration[{}]".format(i)]= extract_single(tracks[i],"duration")
+        # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
+        # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
+        elif "time" in track_info:
+            parameters["duration[{}]".format(i)]=extract_single(tracks[i],"time")
 
     parameters["api_sig"] = sign_signature(parameters,api_secret)
 
@@ -395,7 +405,11 @@ def record_failed_scrobble(track_info,timestamp,failed_scrobbles,cache_file_path
         failed_scrobble["album"]=extract_single(track_info,"album")
     if "track" in track_info:
         failed_scrobble["trackNumber"]=extract_single(track_info,"track")
-    if "time" in track_info:
+    if "duration" in track_info:
+        failed_scrobble["duration"]=extract_single(track_info,"duration")
+    # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
+    # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
+    elif "time" in track_info:
         failed_scrobble["duration"]=extract_single(track_info,"time")
 
     if failed_scrobble not in failed_scrobbles:
@@ -434,10 +448,12 @@ def scrobble_track(track_info,timestamp,url,api_key,api_secret,session_key):
     if "album" in track_info:
         parameters["album"]=extract_single(track_info,"album")
     if "track" in track_info:
-        # Sometimes we'll have duplicate track numbers and this will return a list
-        # I blame beets, dammit my library
         parameters["trackNumber"]=extract_single(track_info,"track")
-    if "time" in track_info:
+    if "duration" in track_info:
+        parameters["duration"]=extract_single(track_info,"duration")
+    # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
+    # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
+    elif "time" in track_info:
         parameters["duration"]=extract_single(track_info,"time")
 
     parameters["api_sig"] = sign_signature(parameters,api_secret)
@@ -521,7 +537,10 @@ def mpd_wait_for_play(client):
         if state == "play":
             song = client.currentsong()
 
-            song_duration = float(song["duration"])
+            # Here we check if duration is in the track_info and use it if we can
+            # Storing duration info in "time" is deprecated, as per the mpd spec,
+            # however some servers (namely mopidy) still do this. Bad mopidy, bad.
+            song_duration = float(song["duration"] if "duration" in song else song["time"])
             title = song["title"]
             elapsed = float(status["elapsed"])
 
@@ -597,8 +616,12 @@ def mpd_watch_track(client, session, config):
             song = client.currentsong()
             #logger.debug("Song info: {}".format(song))
 
-            song_duration = float(song["duration"])
+            # Here we check if duration is in the track_info and use it if we can
+            # Storing duration info in "time" is deprecated, as per the mpd spec,
+            # however some servers (namely mopidy) still do this. Bad mopidy, bad.
+            song_duration = float(song["duration"] if "duration" in song else song["time"])
             if "title" in song:
+
                 title = song["title"]
             else:
                 title = ""

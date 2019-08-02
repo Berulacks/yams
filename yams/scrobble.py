@@ -687,7 +687,7 @@ def mpd_watch_track(client, session, config):
             time.sleep(update_interval)
 
 
-def find_session(session_file_path,base_url,api_key,api_secret):
+def find_session(session_file_path,base_url,api_key,api_secret,interactive=True):
     """
     Try to read a saved last.fm session from disk, or create a new one.
 
@@ -695,11 +695,13 @@ def find_session(session_file_path,base_url,api_key,api_secret):
     :param base_url: The base_url of the scrobble 2.0 API
     :param api_key: This program's last.fm API key
     :param api_secret: This program's last.fm API secret
+    :param interactive: Are we in an interactive shell where we can prompt the user for info?
 
     :type session_file_path: str
     :type base_url: str
     :type api_key: str
     :type api_secret: str
+    :type interactive: bool
     """
 
     # Try to read a saved session...
@@ -715,6 +717,11 @@ def find_session(session_file_path,base_url,api_key,api_secret):
     # If not, authenticate again (no harm no foul)
     except Exception as e:
         logger.error("Couldn't read session file: {}".format(e))
+
+        if not interactive:
+            logger.error("Please run yams in an interactive shell to perform authentication. You only need to do this once.")
+            exit(1)
+
         logger.info("Attempting new authentication...")
         token = get_token(base_url,api_key,api_secret)
         logger.info("Token received, navigate to http://www.last.fm/api/auth/?api_key={}&token={} to authenticate...".format(api_key,token))
@@ -801,7 +808,8 @@ def cli_run():
     mpd_port = config["mpd_port"]
 
 
-    user_name, session = find_session(session_file,base_url,api_key,api_secret)
+    interactive_shell_available = not config["non_interactive"] if "non_interactive" in config else True
+    user_name, session = find_session(session_file,base_url,api_key,api_secret,interactive_shell_available)
 
 
     try:

@@ -270,6 +270,8 @@ def configure():
         config['mpd_host']=os.environ['MPD_HOST']
     if 'MPD_PORT' in os.environ:
         config['mpd_port']=os.environ['MPD_PORT']
+    if 'NON_INTERACTIVE' in os.environ:
+        config['non_interactive']=os.environ['NON_INTERACTIVE']
     #3 User config
     read_from_file(config_path,config)
 

@@ -6,6 +6,7 @@ After=mpd.service
 
 [Service]
 Type=simple
+Environment="NON_INTERACTIVE=1"
 # Note: Please update this to your installed yams binary's path, if necessary
 ExecStart=/usr/bin/yams -N
 

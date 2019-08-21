@@ -765,7 +765,11 @@ def fork(config):
         pid = os.fork()
         if pid > 0:
 
-            os.setsid()
+            try:
+                os.setsid()
+            except:
+                logger.warn("Could not call setsid()!")
+
             os.umask(0)
             os.chdir("/")
 
@@ -777,11 +781,13 @@ def fork(config):
                         save_pid(config["pid_file"],pid)
                         exit(0)
             except Exception as e_2:
-                logger.error("Could not perform second fork to pid! Error: {}".format(e_2))
+                logger.exception("Could not perform second fork to pid! Error: {}".format(e_2))
+                exit(1)
             exit(0)
 
     except Exception as e:
-        logger.error("Could not fork to pid! Error: {}".format(e))
+        logger.exception("Could not fork to pid! Error: {}".format(e))
+        exit(1)
 
 
 def connect_to_mpd(host,port):

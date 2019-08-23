@@ -42,9 +42,10 @@ setup(
 
     # Dependent packages (distributions)
     install_requires=[
-        'python-mpd2==1.0.0',
-        'PyYAML==5.1',
-        'requests==2.21.0'
+        'python-mpd2>=1.0.0',
+        'PyYAML>=5.1',
+        'requests>=2.21.0',
+        'psutil>=5.6.3'
     ],
     python_requires='>=3',
     zip_safe=False

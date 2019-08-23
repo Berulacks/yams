@@ -7,6 +7,7 @@ import yaml
 import signal
 import logging
 import subprocess
+import psutil
 from yams import VERSION
 from sys import exit
 
@@ -115,6 +116,8 @@ def kill(path):
                 pid = pid_file.readlines()[0].strip()
                 logger.warn("Killing process #{pid} and shutting down...".format(pid=pid))
                 pid = int(pid)
+                process = psutil.Process(pid)
+                logger.debug("Process {} ({}): {}".format(process.name(),pid,process.cmdline()))
             except Exception as e:
                 logger.error("Failed to kill process {pid}: {error}".format(pid=str(pid), error=e))
                 logger.warn("Shutting down...")
@@ -125,28 +128,42 @@ def kill(path):
         exit(1)
 
     os.remove(path)
-    os.kill(pid,signal.SIGTERM)
+
+    if is_process_yams(process):
+        os.kill(pid,signal.SIGTERM)
+    else:
+        logger.error("Running process in PID {} ({}) does not appear to be YAMS. We won't be killing it.".format(pid,process.name()))
+        exit(1)
+
     exit(0)
+
+def is_process_yams(process):
+    return 'yams' in str.lower(process.name()) or 'yams' in [str.lower(entry) for entry in process.cmdline()]
 
 def is_pid_running(config):
     try:
         if "pid_file" in config and os.path.exists(config["pid_file"]):
             with open(config["pid_file"],"r") as pid_file:
                 pid=int(pid_file.readlines()[0].strip())
-                try:
-                    logger.debug("Attempting to fake kill (check if running) process #{}".format(pid))
-                    test=os.kill(pid,0)
-                    logger.debug("Process {} is running".format(pid))
-                    return True
-                except Exception as e:
-                    logger.debug("Process {} is not running!, Exception: {}".format(str(pid),str(e)))
-                    return False
+                process = psutil.Process(pid)
+                if is_process_yams(process):
 
+                    if process.is_running():
+                        logger.debug("Process {} - {} is running! ".format(process.name(),process.cmdline()) )
+                        return True
+                    else:
+                        logger.debug("Process {} - {} is not running!".format(process.name(),process.cmdline()) )
+                        return False
+
+                else:
+                    logger.debug("Running process in PID {} does not appear to be YAMS".format(pid))
     except Exception as e:
-        logger.debug("Couldn't detect old pid file, continuing. Error: {}".format(e))
+        logger.debug("Error checking if YAMS is already running. Error: {}".format(e))
         return False
+
     if not os.path.exists(config["pid_file"]):
         logger.debug("Could not find pid file at: {}".format(config["pid_file"]))
+
     return False
 
 def watch_log(path):

@@ -8,7 +8,7 @@ After=mpd.service
 Type=simple
 Environment="NON_INTERACTIVE=1"
 # Note: Please update this to your installed yams binary's path, if necessary
-ExecStart=/usr/bin/yams -N
+ExecStart=/usr/bin/python3 -m yams -N
 
 [Install]
 WantedBy=default.target

@@ -1,7 +1,8 @@
 # Maintainer: Derin Yarsuvat <derin.aur at fea dot st>
 pkgname=python-yams-git
 pkgrel=1
-pkgver=0.7.r3.gf0a8377
+pkgver=0.7.1.r3.g7bc7fa1
+conflicts=('python-yams')
 pkgdesc="A Last.FM scrobbler for MPD"
 arch=('x86_64')
 url="https://github.com/Berulacks/yams"

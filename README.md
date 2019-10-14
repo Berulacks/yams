@@ -16,7 +16,7 @@ YAMS is just your run of the mill Last.FM scrobbler. But, if you *really* need t
 * Automatic daemonization and config file generation.
 
 #### Requirements
-`PyYAML` and `python-mpd2` are required. YAMS is written for `python3` *only*.
+`PyYAML`, `psutil` and `python-mpd2` are required. YAMS is written for `python3` *only*.
 
 #### Installation
 ##### Via Pip
@@ -46,7 +46,7 @@ The script includes a `yams` script that will be installed by pip.
 
 A Systemd user service unit file is included in the root of this repository (named `yams.service`). This can be used to automate starting/stopping YAMS on startup, for a specific user. (Note for users who installed from the AUR: The service file is automatically installed with the PKGBUILD, you just need to start it with `systemctl`)
 
-To install, copy it to `~/.config/systemd/user/` and run `systemctl --user enable --now yams` to enable/start it. Note that you should also [start mpd as a Systemd service](https://wiki.archlinux.org/index.php/Music_Player_Daemon#Autostart_with_systemd) to ensure YAMS actually loads up at the right time. You might also need to edit the path to the YAMS binary in the unit file if you installed the YAMS binary anywhere other than `/usr/bin/yams`
+To install, copy it to `~/.config/systemd/user/` and run `systemctl --user enable --now yams` to enable/start it. Note that you should also [start mpd as a Systemd service](https://wiki.archlinux.org/index.php/Music_Player_Daemon#Autostart_with_systemd) to ensure YAMS actually loads up at the right time. You might also need to edit the path to the python binary in the unit file if your system python version is installed anywhere other than `/usr/bin/python3`.
 
 #### Setup
 

@@ -647,8 +647,7 @@ def mpd_watch_track(client, session, config):
                 if use_real_time:
                     # So, if we're using real time, and our default_scrobble_threshold is less than 50, we need to do some math:
                     # Assuming we might have started late, how many real world seconds do I have to listen to to be able to say I've listened to N% (where N = default_scrobble_threshold) of music? Take that amount of seconds and turn it into its own threshold (added to the aforementioned late start time) and baby you've got a stew going
-                    #scrobble_threshold = ( reported_start_time + song_duration * default_scrobble_threshold/100 ) / song_duration * 100
-                    scrobble_threshold = (reported_start_time / song_duration * 100) + default_scrobble_threshold
+                    scrobble_threshold = (reported_start_time + ( song_duration - reported_start_time )* default_scrobble_threshold) / song_duration
                     logger.info("While the scrobbling threshold would normally be {}%, since we're starting at {}s (out of {}s, a.k.a. {}%), it's now {}%".format(default_scrobble_threshold,format(reported_start_time,'.1f'),format(song_duration,'.1f'), format(reported_start_time/song_duration*100,'.1f'), format(scrobble_threshold,'.1f')))
                 else:
                     scrobble_threshold = default_scrobble_threshold

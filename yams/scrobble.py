@@ -642,7 +642,7 @@ def mpd_watch_track(client, session, config):
                 reject_track = ""
 
                 start_time = time.time()
-                reported_start_time = elapsed
+                reported_start_time = elapsed - watch_threshold
 
                 if use_real_time:
                     # So, if we're using real time, and our default_scrobble_threshold is less than 50, we need to do some math:
@@ -682,7 +682,7 @@ def mpd_watch_track(client, session, config):
                         if not allow_scrobble_same_song_twice_in_a_row:
                             reject_track = title
                     else:
-                        logger.warn("Can't scrobble yet, time elapsed ({}s) < adjustted duration ({}s)".format(real_time_elapsed, 0.5*song_duration))
+                        logger.warn("Can't scrobble yet, time elapsed ({}s) < adjustted duration ({}s)".format(real_time_elapsed, (scrobble_threshold/100)*song_duration))
 
             time.sleep(update_interval)
 

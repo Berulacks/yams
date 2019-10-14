@@ -1,13 +1,19 @@
+# Python stuff
 __pycache__
 */__pycache__
-
-*.spec
-build/
-dist/
-
-.lastfm_session
-
 *.pyc
 */*.pyc
 
+# Pip/Twine stuff
+*.spec
+build/
+dist/
 *.egg-info
+
+# A local session file (used while testing)
+.lastfm_session
+
+
+# PKGBUILD stuff
+python-yams-git/*
+*.tar.xz

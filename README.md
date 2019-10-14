@@ -25,6 +25,8 @@ Run `pip3 install YAMScrobbler` (or maybe just `pip`, depending on your system)
 ##### Via the AUR
 If you're an Arch Linux user you may use the [python-yams](https://aur.archlinux.org/packages/python-yams/) package in the [AUR](https://aur.archlinux.org/) to install YAMS locally. Please see [here](https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages) for instructions if you're new to AUR packages.
 
+**Note:** For those who want to install the `-git` variant of the AUR package, checkout this repo and use the provided `PKGBUILD` at the repository's root folder. That is: check out the repo, `cd` in, and run `makepkg -s` to generate an installable package. The `PKGBUILD` can be re-used to apply updates.
+
 ##### From Source
 Clone this repo and run `pip3 install --user -e <path_to_repo>` (omit the `-e` flag if you don't want changes in the repo to be reflected in your local installation; likewise one can omit the `--user` flag for a system-wide installation, though it's really not recommended).
 

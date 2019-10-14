@@ -17,3 +17,5 @@ dist/
 # PKGBUILD stuff
 python-yams-git/*
 *.tar.xz
+pkg/*
+src/*

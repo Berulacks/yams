@@ -149,7 +149,7 @@ def is_pid_running(config):
                 if is_process_yams(process):
 
                     if process.is_running():
-                        logger.debug("Process {} - {} is running! ".format(process.name(),process.cmdline()) )
+                        logger.debug("Process {} ({})- {} is running! ".format(process.name(),pid,process.cmdline()) )
                         return True
                     else:
                         logger.debug("Process {} - {} is not running!".format(process.name(),process.cmdline()) )

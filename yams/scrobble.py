@@ -544,7 +544,8 @@ def mpd_wait_for_play(client):
             title = song["title"]
             elapsed = float(status["elapsed"])
 
-            logger.info("Playing {songname}, {elapsed}/{duration}s ({percent_elapsed}%)".format( songname = title, elapsed = format(elapsed,'.0f'), duration = format(song_duration,'.0f'),  percent_elapsed = format(( elapsed / song_duration * 100 ),'.1f') ))
+            logger.info("Playing {songname}, by {artist} (from {album})".format( songname = title, artist = extract_single(song,"artist"), album = extract_single(song,"album")  ))
+            logger.info("{elapsed}/{duration}s ({percent_elapsed}%)".format( elapsed = format(elapsed,'.0f'), duration = format(song_duration,'.0f'),  percent_elapsed = format(( elapsed / song_duration * 100 ),'.1f') ))
 
             return True
 
@@ -620,11 +621,10 @@ def mpd_watch_track(client, session, config):
             # Storing duration info in "time" is deprecated, as per the mpd spec,
             # however some servers (namely mopidy) still do this. Bad mopidy, bad.
             song_duration = float(song["duration"] if "duration" in song else song["time"])
-            if "title" in song:
 
-                title = song["title"]
-            else:
-                title = ""
+            title = extract_single(song,"title")
+            artist = extract_single(song,"artist")
+            album = extract_single(song,"album")
 
             elapsed = float(status["elapsed"])
 
@@ -649,12 +649,12 @@ def mpd_watch_track(client, session, config):
                     # Assuming we might have started late, how many real world seconds do I have to listen to to be able to say I've listened to N% (where N = default_scrobble_threshold) of music? Take that amount of seconds and turn it into its own threshold (added to the aforementioned late start time) and baby you've got a stew going
                     scrobble_threshold = ( (reported_start_time + ( song_duration - reported_start_time )* (default_scrobble_threshold/100)) / song_duration ) * 100
                     logger.info("While the scrobbling threshold would normally be {}%, since we're starting at {}s (out of {}s, a.k.a. {}%), it's now {}%".format(default_scrobble_threshold,format(reported_start_time,'.1f'),format(song_duration,'.1f'), format(reported_start_time/song_duration*100,'.1f'), format(scrobble_threshold,'.1f')))
-                    logger.debug(f"(start + ( total - start ) * threshold) / total =  ( {reported_start_time} + ( {song_duration} - {reported_start_time} ) * { default_scrobble_threshold} ) / {song_duration}")
+                    logger.debug("(start + ( total - start ) * threshold) / total =  ( {0} + ( {1} - {0} ) * {2} ) / {1}".format(reported_start_time , song_duration , default_scrobble_threshold ))
                 else:
                     scrobble_threshold = default_scrobble_threshold
 
                 logger.debug("Reported start time: {}, real world time: {}".format(reported_start_time,start_time))
-                logger.info("Starting to watch track: {}, currently at: {}/{}s ({}%). Will scrobble in: {}s".format(title,format(elapsed, '.0f'),format(song_duration,'.0f'), format(percent_elapsed, '.1f'), format(( song_duration * scrobble_threshold / 100 ) - elapsed, '.0f'  ) ) )
+                logger.info("Starting to watch track: {} by {}, currently at: {}/{}s ({}%). Will scrobble in: {}s".format(title,artist,format(elapsed, '.0f'),format(song_duration,'.0f'), format(percent_elapsed, '.1f'), format(( song_duration * scrobble_threshold / 100 ) - elapsed, '.0f'  ) ) )
                 now_playing(song,base_url,api_key,api_secret,session)
 
             elif current_watched_track == title:

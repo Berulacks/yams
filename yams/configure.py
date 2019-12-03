@@ -138,7 +138,12 @@ def kill(path):
     exit(0)
 
 def is_process_yams(process):
-    return 'yams' in str.lower(process.name()) or 'yams' in [str.lower(entry) for entry in process.cmdline()]
+    logger.debug("Checking to see if process command line is yams: {}".format(process.cmdline()))
+    command_line = [str.lower(entry) for entry in process.cmdline()]
+
+    yams_in_cl = len([ entry for entry in command_line if 'yams' in entry ]) > 0
+
+    return 'yams' in str.lower(process.name()) or yams_in_cl
 
 def is_pid_running(config):
     try:

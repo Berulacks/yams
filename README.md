@@ -131,3 +131,7 @@ Here's the output for `--help`:
 - `-g` is pretty useful, you should probably use it once to not have to keep typing in command line parameters.
 - Windows support is not guaranteed. YAMS works fine under Elementary OS Juno and OS X Mojave (presumably all variants of Linux and OSX with python3 should work fine).
 - YAMS is developed with Python `3.7`, if you're encountering a bug with a lower version, report it.
+- YAMS works fine with Libre.FM. Just make sure to do the following:
+   * Set the `base_url` config variable to "https://libre.fm/2.0"
+   * Delete any leftover ".lastfm_session" files
+   * Authenticate like you normally would with Last.FM, however replace "last.fm" with "libre.fm" in the authorization URL printed out by YAMS

@@ -7,7 +7,7 @@ YAMS
 
 YAMS is exactly what its name says it is.
 
-#### Features
+## Features
 YAMS is just your run of the mill Last.FM scrobbler. But, if you *really* need to know, it can do the following:
 
 * Authenticate with the new Last.FM [Scrobbling API v2.0](https://www.last.fm/api/scrobbling) - without the need to input/store your username/password locally.
@@ -17,22 +17,22 @@ YAMS is just your run of the mill Last.FM scrobbler. But, if you *really* need t
 * Prevent accidental duplicate scrobbles on rewind/playback restart/etc.
 * Automatic daemonization and config file generation.
 
-#### Requirements
+## Requirements
 `PyYAML`, `psutil` and `python-mpd2` are required. YAMS is written for `python3` *only*.
 
-#### Installation
-##### Via Pip
+## Installation
+### Via Pip
 Run `pip3 install YAMScrobbler` (or maybe just `pip`, depending on your system)
 
-##### Via the AUR
+### Via the AUR
 If you're an Arch Linux user you may use the [python-yams](https://aur.archlinux.org/packages/python-yams/) package in the [AUR](https://aur.archlinux.org/) to install YAMS locally. Please see [here](https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages) for instructions if you're new to AUR packages.
 
 **Note:** For those who want to install the `-git` variant of the AUR package, checkout this repo and use the provided `PKGBUILD` at the repository's root folder. That is: check out the repo, `cd` in, and run `makepkg -s` to generate an installable package. The `PKGBUILD` can be re-used to apply updates.
 
-##### From Source
+### From Source
 Clone this repo and run `pip3 install --user -e <path_to_repo>` (omit the `-e` flag if you don't want changes in the repo to be reflected in your local installation; likewise one can omit the `--user` flag for a system-wide installation, though it's really not recommended).
 
-#### Running
+## Running
 
 The script includes a `yams` script that will be installed by pip.
 
@@ -46,13 +46,13 @@ The script includes a `yams` script that will be installed by pip.
 
  *NB: (If you can't access the `yams` script, maybe because pip's script install directory isn't in your `$PATH` or something, `python3 -m yams` will also do the trick.)*
 
-##### Via Systemd
+### Via Systemd
 
 A Systemd user service unit file is included in the root of this repository (named `yams.service`). This can be used to automate starting/stopping YAMS on startup, for a specific user. (Note for users who installed from the AUR: The service file is automatically installed with the PKGBUILD, you just need to start it with `systemctl`)
 
 To install, copy it to `~/.config/systemd/user/` and run `systemctl --user enable --now yams` to enable/start it. Note that you should also [start mpd as a Systemd service](https://wiki.archlinux.org/index.php/Music_Player_Daemon#Autostart_with_systemd) to ensure YAMS actually loads up at the right time. You might also need to edit the path to the python binary in the unit file if your system python version is installed anywhere other than `/usr/bin/python3`.
 
-##### Via Launchd (OS X)
+### Via Launchd (OS X)
 
 OS X users can use the `yams.plist` file at the root of this repository to automate starting/stopping YAMS via OS X's built-in `launchd`. Note that this file must be installed manually.
 
@@ -64,19 +64,19 @@ Once loaded, check that everything is running fine with `yams -a`
 
 *Note: The `plist` expects a Homebrew installation of Python to be available at `/usr/local/bin/python3` to work. For systems not using Homebrew's python, edit `yams.plist` and change the first  string in the `ProgramArguments` array to point to your Python binary (or just call YAMS directly). I've left some comments in there to help you out.*
 
-#### Setup
+## Setup
 
 YAMS will use the usual `$MPD_HOST` and `$MPD_PORT` environment variables to connect to `mpd`, if they exist.
 
 Run `yams` and follow the printed instructions to authenticate with Last.FM
 
-##### Configuration Files
+### Configuration Files
 
 If it can't find a config file by default, YAMS will create a default config file, log, cache, and session file in `$HOME/.config/yams`, however it will also accept config files in `$HOME/.yams` or `./.yams` (theoretically configs in `$HOME` or the current working directory can be read in, as well).
 
 YAMS will only create its own directory/configuration file if none of the previous directories exist.
 
-#### Help
+### Help
 
 Here's the output for `--help`:
 
@@ -137,12 +137,12 @@ Here's the output for `--help`:
                             NB: You will still need to kill it by hand. Default:
                             False
 
-#### Contributing
+## Contributing
 - Pull requests are always welcome.
 - YAMS uses [Black](https://github.com/psf/black) for formatting its code.
 - Not much else to say, really - code's riddled with comments, should be (relatively) legible!
 
-#### Other Information
+## Other Information
 - YAMS will try to re-send failed scrobbles every minute during playback, or on every subsequent scrobble. YAMS does not try to re-send failed "Now Playing" requests
 - YAMS will wait on MPD's idle() command *only* when not playing a track. The `update_interval` configruation option controls the rate, in seconds, at which YAMS polls MPD for the currently playing track.
 - YAMS will not crash when an MPD connection is lost but will attempt to re-connect every 10 seconds. Kill the daemon if this behaviour is undesirable, though the reconnect behaviour shouldn't significantly affect system resources.

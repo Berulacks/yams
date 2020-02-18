@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>com.berulacks.yams</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>/usr/local/bin/python3</string>
+            <string>-m</string>
+            <string>yams</string>
+            <string>-N</string>
+            <!--
+            Optional, use YAMS directly:
+            <string>/Users/<your_user_name>/Library/Python/<version>/bin/yams</string>
+            -->
+        </array>
+        <key>RunAtLoad</key>
+        <true />
+        <!--
+        Optional, uncomment these to debug the launchd process:
+        <key>StandardInPath</key>
+        <string>/tmp/yams/launchd.stdin</string>
+        <key>StandardOutPath</key>
+        <string>/tmp/yams/launchd.stdout</string>
+        <key>StandardErrorPath</key>
+        <string>/tmp/yams/launchd.stderr</string>
+        -->
+    </dict>
+</plist>

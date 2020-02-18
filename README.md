@@ -52,6 +52,18 @@ A Systemd user service unit file is included in the root of this repository (nam
 
 To install, copy it to `~/.config/systemd/user/` and run `systemctl --user enable --now yams` to enable/start it. Note that you should also [start mpd as a Systemd service](https://wiki.archlinux.org/index.php/Music_Player_Daemon#Autostart_with_systemd) to ensure YAMS actually loads up at the right time. You might also need to edit the path to the python binary in the unit file if your system python version is installed anywhere other than `/usr/bin/python3`.
 
+##### Via Launchd (OS X)
+
+OS X users can use the `yams.plist` file at the root of this repository to automate starting/stopping YAMS via OS X's built-in `launchd`. Note that this file must be installed manually.
+
+To load the program, copy `yams.plist` to: `$HOME/Library/LaunchAgents/`
+
+To start YAMS, either re-login, or run `launchctl load ~/Library/LaunchAgents/yams.plist`
+
+Once loaded, check that everything is running fine with `yams -a`
+
+*Note: The `plist` expects a Homebrew installation of Python to be available at `/usr/local/bin/python3` to work. For systems not using Homebrew's python, edit `yams.plist` and change the first  string in the `ProgramArguments` array to point to your Python binary (or just call YAMS directly). I've left some comments in there to help you out.*
+
 #### Setup
 
 YAMS will use the usual `$MPD_HOST` and `$MPD_PORT` environment variables to connect to `mpd`, if they exist.

@@ -3,6 +3,8 @@ YAMS
 
 *Yet Another MPD Scrobbler (For Last.FM)*
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 YAMS is exactly what its name says it is.
 
 #### Features
@@ -122,6 +124,11 @@ Here's the output for `--help`:
                             file. "Attaches" to it, for all intents and purposes.
                             NB: You will still need to kill it by hand. Default:
                             False
+
+#### Contributing
+- Pull requests are always welcome.
+- YAMS uses [Black](https://github.com/psf/black) for formatting its code.
+- Not much else to say, really - code's riddled with comments, should be (relatively) legible!
 
 #### Other Information
 - YAMS will try to re-send failed scrobbles every minute during playback, or on every subsequent scrobble. YAMS does not try to re-send failed "Now Playing" requests

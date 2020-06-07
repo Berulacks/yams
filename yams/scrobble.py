@@ -605,8 +605,12 @@ def mpd_wait_for_play(client):
             # Here we check if duration is in the track_info and use it if we can
             # Storing duration info in "time" is deprecated, as per the mpd spec,
             # however some servers (namely mopidy) still do this. Bad mopidy, bad.
+            # Use values from the status rather than the song, as duration is
+            # missing when using mpd to play urls or local files
             song_duration = float(
-                song["duration"] if "duration" in song else song["time"]
+                status["duration"]
+                if "duration" in status
+                else status[time].split(":")[-1]
             )
             title = song["title"]
             elapsed = float(status["elapsed"])
@@ -706,8 +710,12 @@ def mpd_watch_track(client, session, config):
             # Here we check if duration is in the track_info and use it if we can
             # Storing duration info in "time" is deprecated, as per the mpd spec,
             # however some servers (namely mopidy) still do this. Bad mopidy, bad.
+            # Use values from the status rather than the song, as duration is
+            # missing when using mpd to play urls or local files
             song_duration = float(
-                song["duration"] if "duration" in song else song["time"]
+                status["duration"]
+                if "duration" in status
+                else status["time"].split(":")[-1]
             )
 
             title = extract_single(song, "title")

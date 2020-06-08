@@ -610,7 +610,7 @@ def mpd_wait_for_play(client):
             song_duration = float(
                 status["duration"]
                 if "duration" in status
-                else status[time].split(":")[-1]
+                else status["time"].split(":")[-1]
             )
             title = song["title"]
             elapsed = float(status["elapsed"])

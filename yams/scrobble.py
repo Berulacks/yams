@@ -588,7 +588,10 @@ def mpd_wait_for_play(client):
 
     try:
         while True:
+
             status = client.status()
+            current_song = client.currentsong()
+
             # logger.info(status)
             state = status["state"]
             if blocked:
@@ -614,8 +617,8 @@ def mpd_wait_for_play(client):
                 else status["time"].split(":")[-1]
             )
             # Continue to block if listening to internet radio (ie. duration is 0)
-            if song_duration == 0:
-                logger.info("Can't scrobble track, it's duration is 0")
+            if not is_track_scrobbleable(current_song):
+                logger.info("Can't scrobble track, waiting for the next one.")
                 blocked = True
                 changes = client.idle("player")
                 logger.info(
@@ -650,6 +653,31 @@ def mpd_wait_for_play(client):
     except Exception as e:
         logger.error("Something went wrong waiting on MPD's Idle event: {}".format(e))
         return False
+
+
+def is_track_scrobbleable(track_info):
+    """
+    Returns true if a track is scrobbleable, e.g. if a track contains the required amount of fields for Last.FM's API
+
+    :param track_info: The track_info (generally returned from a currentsong API call)
+
+    :type track_info: dict
+    :rtype: bool
+    """
+
+    def check_field(field, warn=False):
+        if field not in track_info:
+            message = "Track is not scrobbleable as it has no {} field!".format(field)
+            logger.warn(message) if warn else logger.debug(message)
+            return False
+        return True
+
+    scrobbleable = check_field("artist")
+    scrobbleable = check_field("title")
+    scrobbleable = check_field("duration")
+    scrobbleable = check_field("album")
+
+    return scrobbleable
 
 
 def mpd_watch_track(client, session, config):

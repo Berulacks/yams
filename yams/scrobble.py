@@ -583,24 +583,25 @@ def mpd_wait_for_play(client):
     :rtype: bool
     """
 
-    status = client.status()
-    state = status["state"]
-    if state == "play":
-        return True
+    # Track whether player blocks before entering play state
+    blocked = False
 
     try:
+        while True:
+            status = client.status()
+            # logger.info(status)
+            state = status["state"]
+            if blocked:
+                logger.info("Received state: {}".format(state))
 
-        changes = client.idle("player")
-
-        logger.info("Received event in subsytem: {}".format(changes))  # handle changes
-
-        status = client.status()
-        # logger.info(status)
-        state = status["state"]
-        logger.info("Received state: {}".format(state))
-
-        if state == "play":
-            song = client.currentsong()
+            # Block until a change if not in the play state
+            if state != "play":
+                blocked = True
+                changes = client.idle("player")
+                logger.info(
+                    "Recieved event in subsystem: {}".format(changes)
+                )  # handle changes
+                continue
 
             # Here we check if duration is in the track_info and use it if we can
             # Storing duration info in "time" is deprecated, as per the mpd spec,
@@ -612,6 +613,20 @@ def mpd_wait_for_play(client):
                 if "duration" in status
                 else status["time"].split(":")[-1]
             )
+            # Continue to block if listening to internet radio (ie. duration is 0)
+            if song_duration == 0:
+                logger.info("Can't scrobble track, it's duration is 0")
+                blocked = True
+                changes = client.idle("player")
+                logger.info(
+                    "Recieved event in subsystem: {}".format(changes)
+                )  # handle changes
+                continue
+            # Don't log "Playing" message if mpd was already playing (ie. reduce verbosity)
+            elif not blocked:
+                return True
+
+            song = client.currentsong()
             title = song["title"]
             elapsed = float(status["elapsed"])
 
@@ -631,8 +646,6 @@ def mpd_wait_for_play(client):
             )
 
             return True
-
-        return mpd_wait_for_play(client)
 
     except Exception as e:
         logger.error("Something went wrong waiting on MPD's Idle event: {}".format(e))

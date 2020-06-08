@@ -572,6 +572,30 @@ def truncate_pending_scrobbles_list(count, scrobbles, path_to_cache):
         return scrobbles
 
 
+def mpd_wait_for_valid_song(client):
+    """
+    Block and wait until mpd is playing a song appropriate to scrobble.
+    NB: Check to see if the song is valid _before_ calling this as it blocks immediately.
+
+    :param client: The MPD client object
+    :type client: mpd.MPDClient
+    """
+    while True:
+
+        changes = client.idle("player")
+
+        current_song = client.currentsong()
+        status = client.status()
+        state = status["state"]
+
+
+        if is_track_scrobbleable(current_song):
+            return
+        else:
+            logger.info("Received '{}' state event in subsystem '{}' (while waiting for valid track)".format(state, changes))
+            logger.info("Current track is not scrobbleable. Waiting until next player event to check again.")
+            logger.debug("Current track info is as follows: [{}]".format( ",".join( "{{{0}:{1}}}".format(str(key), str(value)) for key, value in current_song.items() ) ) )
+
 def mpd_wait_for_play(client):
     """
     Block and wait for mpd to switch to the "play" action
@@ -583,54 +607,45 @@ def mpd_wait_for_play(client):
     :rtype: bool
     """
 
-    # Track whether player blocks before entering play state
-    blocked = False
-
     try:
+
         while True:
 
             status = client.status()
-            current_song = client.currentsong()
-
-            # logger.info(status)
+            song = client.currentsong()
             state = status["state"]
-            if blocked:
+
+            # Loop until our state is 'play'
+            while state != "play":
+                logger.debug("Waiting for the next mpd event...")
+                # We're not 'play'ing, so lets wait until the state changes
+                changes = client.idle("player")
+                logger.info("Recieved event in subsystem: {}".format(changes))  # handle changes
+                # The state has now changed
+                status = client.status()
+                song = client.currentsong()
+                state = status["state"]
+
                 logger.info("Received state: {}".format(state))
 
-            # Block until a change if not in the play state
-            if state != "play":
-                blocked = True
-                changes = client.idle("player")
-                logger.info(
-                    "Recieved event in subsystem: {}".format(changes)
-                )  # handle changes
+            # Continue to block if the state's song isn't valid.
+            if not is_track_scrobbleable(song):
+                logger.info("Song is not scrobbleable. Waiting for next scrobbleable track.")
+                mpd_wait_for_valid_song(client)
+                # We now have a valid song, lots go back to our loop and check the state again
                 continue
 
-            # Here we check if duration is in the track_info and use it if we can
+            logger.info("Received state: {}".format(state))
+
             # Storing duration info in "time" is deprecated, as per the mpd spec,
             # however some servers (namely mopidy) still do this. Bad mopidy, bad.
-            # Use values from the status rather than the song, as duration is
-            # missing when using mpd to play urls or local files
             song_duration = float(
-                status["duration"]
+                song["duration"]
                 if "duration" in status
-                else status["time"].split(":")[-1]
+                else song["time"]
             )
-            # Continue to block if listening to internet radio (ie. duration is 0)
-            if not is_track_scrobbleable(current_song):
-                logger.info("Can't scrobble track, waiting for the next one.")
-                blocked = True
-                changes = client.idle("player")
-                logger.info(
-                    "Recieved event in subsystem: {}".format(changes)
-                )  # handle changes
-                continue
-            # Don't log "Playing" message if mpd was already playing (ie. reduce verbosity)
-            elif not blocked:
-                return True
 
-            song = client.currentsong()
-            title = song["title"]
+            title = extract_single(song, "title")
             elapsed = float(status["elapsed"])
 
             logger.info(
@@ -651,9 +666,8 @@ def mpd_wait_for_play(client):
             return True
 
     except Exception as e:
-        logger.error("Something went wrong waiting on MPD's Idle event: {}".format(e))
+        logger.exception("Something went wrong waiting on MPD's Idle event: {}".format(e))
         return False
-
 
 def is_track_scrobbleable(track_info):
     """
@@ -674,7 +688,8 @@ def is_track_scrobbleable(track_info):
 
     scrobbleable = check_field("artist")
     scrobbleable = check_field("title")
-    scrobbleable = check_field("duration")
+    # We're doing a 'time' check here for mopidy, which uses it: a deprecated call to mpd
+    scrobbleable = check_field("duration") or check_field("time")
     scrobbleable = check_field("album")
 
     return scrobbleable

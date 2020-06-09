@@ -625,7 +625,7 @@ def mpd_wait_for_play(client):
         song = client.currentsong()
         state = status["state"]
 
-        in_suitable_state = (state == "play")
+        in_suitable_state = state == "play"
         appropriate_track = is_track_scrobbleable(song)
 
         # Prevents us from printing song info if we're not switching tracks
@@ -649,7 +649,7 @@ def mpd_wait_for_play(client):
             song = client.currentsong()
             state = status["state"]
 
-            in_suitable_state = (state == "play")
+            in_suitable_state = state == "play"
             appropriate_track = is_track_scrobbleable(song)
 
             logger.info("Received state: {}".format(state))
@@ -685,7 +685,7 @@ def is_track_scrobbleable(track_info):
     scrobbleable = check_field("artist")
     scrobbleable &= check_field("title")
     # We're doing a 'time' check here for mopidy, which uses it: a deprecated call to mpd
-    scrobbleable &= (check_field("duration") or check_field("time"))
+    scrobbleable &= check_field("duration") or check_field("time")
     scrobbleable &= check_field("album")
 
     return scrobbleable

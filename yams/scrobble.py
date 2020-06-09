@@ -572,33 +572,45 @@ def truncate_pending_scrobbles_list(count, scrobbles, path_to_cache):
         return scrobbles
 
 
-def mpd_wait_for_valid_song(client):
+def print_song_info(client):
     """
-    Block and wait until mpd is playing a song appropriate to scrobble.
-    NB: Check to see if the song is valid _before_ calling this as it blocks immediately.
+    Print a song's playback information
 
     :param client: The MPD client object
     :type client: mpd.MPDClient
     """
-    while True:
 
-        changes = client.idle("player")
+    song = client.currentsong()
+    status = client.status()
 
-        current_song = client.currentsong()
-        status = client.status()
-        state = status["state"]
+    # Storing duration info in "time" is deprecated, as per the mpd spec,
+    # however some servers (namely mopidy) still do this. Bad mopidy, bad.
+    song_duration = float(song["duration"] if "duration" in status else song["time"])
 
+    title = extract_single(song, "title")
 
-        if is_track_scrobbleable(current_song):
-            return
-        else:
-            logger.info("Received '{}' state event in subsystem '{}' (while waiting for valid track)".format(state, changes))
-            logger.info("Current track is not scrobbleable. Waiting until next player event to check again.")
-            logger.debug("Current track info is as follows: [{}]".format( ",".join( "{{{0}:{1}}}".format(str(key), str(value)) for key, value in current_song.items() ) ) )
+    logger.info(
+        "Playing {songname}, by {artist} (from {album})".format(
+            songname=title,
+            artist=extract_single(song, "artist"),
+            album=extract_single(song, "album"),
+        )
+    )
+
+    if "elapsed" in status:
+        elapsed = float(status["elapsed"])
+        logger.info(
+            "{elapsed}/{duration}s ({percent_elapsed}%)".format(
+                elapsed=format(elapsed, ".0f"),
+                duration=format(song_duration, ".0f"),
+                percent_elapsed=format((elapsed / song_duration * 100), ".1f"),
+            )
+        )
+
 
 def mpd_wait_for_play(client):
     """
-    Block and wait for mpd to switch to the "play" action
+    Block and wait for mpd to switch to the "play" action. Will continue blocking if the play action is not a valid, scrobbleable track.
 
     :param client: The MPD client object
     :type client: mpd.MPDClient
@@ -609,65 +621,48 @@ def mpd_wait_for_play(client):
 
     try:
 
-        while True:
+        status = client.status()
+        song = client.currentsong()
+        state = status["state"]
 
+        in_suitable_state = (state == "play")
+        appropriate_track = is_track_scrobbleable(song)
+
+        # Prevents us from printing song info if we're not switching tracks
+        if in_suitable_state and appropriate_track:
+            return True
+
+        while not in_suitable_state or not appropriate_track:
+
+            if not appropriate_track:
+                logger.info("Track cannot be scrobbled, waiting for next track...")
+
+            logger.debug("Waiting for the next mpd event...")
+            # We're not 'play'ing, so lets wait until the state changes
+            changes = client.idle("player")
+            logger.info(
+                "Recieved event in subsystem: {}".format(changes)
+            )  # handle changes
+
+            # The state has now changed
             status = client.status()
             song = client.currentsong()
             state = status["state"]
 
-            # Loop until our state is 'play'
-            while state != "play":
-                logger.debug("Waiting for the next mpd event...")
-                # We're not 'play'ing, so lets wait until the state changes
-                changes = client.idle("player")
-                logger.info("Recieved event in subsystem: {}".format(changes))  # handle changes
-                # The state has now changed
-                status = client.status()
-                song = client.currentsong()
-                state = status["state"]
-
-                logger.info("Received state: {}".format(state))
-
-            # Continue to block if the state's song isn't valid.
-            if not is_track_scrobbleable(song):
-                logger.info("Song is not scrobbleable. Waiting for next scrobbleable track.")
-                mpd_wait_for_valid_song(client)
-                # We now have a valid song, lots go back to our loop and check the state again
-                continue
+            in_suitable_state = (state == "play")
+            appropriate_track = is_track_scrobbleable(song)
 
             logger.info("Received state: {}".format(state))
 
-            # Storing duration info in "time" is deprecated, as per the mpd spec,
-            # however some servers (namely mopidy) still do this. Bad mopidy, bad.
-            song_duration = float(
-                song["duration"]
-                if "duration" in status
-                else song["time"]
-            )
-
-            title = extract_single(song, "title")
-            elapsed = float(status["elapsed"])
-
-            logger.info(
-                "Playing {songname}, by {artist} (from {album})".format(
-                    songname=title,
-                    artist=extract_single(song, "artist"),
-                    album=extract_single(song, "album"),
-                )
-            )
-            logger.info(
-                "{elapsed}/{duration}s ({percent_elapsed}%)".format(
-                    elapsed=format(elapsed, ".0f"),
-                    duration=format(song_duration, ".0f"),
-                    percent_elapsed=format((elapsed / song_duration * 100), ".1f"),
-                )
-            )
-
-            return True
-
     except Exception as e:
-        logger.exception("Something went wrong waiting on MPD's Idle event: {}".format(e))
+        logger.exception(
+            "Something went wrong waiting on MPD's Idle event: {}".format(e)
+        )
         return False
+
+    print_song_info(client)
+    return True
+
 
 def is_track_scrobbleable(track_info):
     """

@@ -682,7 +682,7 @@ def is_track_scrobbleable(track_info):
         return True
 
     # If any of the following are False we are not scrobbleable.
-    scrobbleable &= check_field("artist")
+    scrobbleable = check_field("artist")
     scrobbleable &= check_field("title")
     # We're doing a 'time' check here for mopidy, which uses it: a deprecated call to mpd
     scrobbleable &= (check_field("duration") or check_field("time"))

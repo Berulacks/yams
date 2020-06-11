@@ -634,8 +634,8 @@ def mpd_wait_for_play(client):
 
         while not in_suitable_state or not appropriate_track:
 
-            if not appropriate_track:
-                logger.info("Track cannot be scrobbled, waiting for next track...")
+            if not appropriate_track and in_suitable_state:
+                logger.warn("Track cannot be scrobbled, waiting for next track...")
 
             logger.debug("Waiting for the next mpd event...")
             # We're not 'play'ing, so lets wait until the state changes

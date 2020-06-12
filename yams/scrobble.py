@@ -668,7 +668,7 @@ def mpd_wait_for_play(client):
 
 def is_track_scrobbleable(song, status):
     """
-    Returns true if a track is scrobbleable, e.g. if a track contains the required amount of fields for Last.FM's API
+    Returns true if a track is scrobbleable, e.g. if a track contains the required amount of fields for Last.FM's API and track valid e.g. duration non-zero
 
     :param song: The info on the track taken from client.currentsong()
     :param status: The info on the track taken from client.status()
@@ -691,6 +691,15 @@ def is_track_scrobbleable(song, status):
     # We're doing a 'time' check here for mopidy, which uses it: a deprecated call to mpd
     scrobbleable &= check_field("duration", status) or check_field("time", status)
     scrobbleable &= check_field("album", song)
+
+    # If all fields present, check that song duration is not zero (would cause div by zero errors)
+    if scrobbleable:
+        song_duration = float(
+            status["duration"]
+            if "duration" in status
+            else status["time"].split(":")[-1]
+        )
+        scrobbleable &= song_duration > 0
 
     return scrobbleable
 

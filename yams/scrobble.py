@@ -619,10 +619,11 @@ def mpd_wait_for_play(client):
     :rtype: bool
     """
 
-    try:
+    # These need to be out here as there is an external try/catch block checking to see if we hit a connection error, and handle that gracefully
+    status = client.status()
+    song = client.currentsong()
 
-        status = client.status()
-        song = client.currentsong()
+    try:
         state = status["state"]
 
         in_suitable_state = state == "play"
@@ -654,14 +655,15 @@ def mpd_wait_for_play(client):
 
             logger.info("Received state: {}".format(state))
 
+        print_song_info(client)
+        return True
+
     except Exception as e:
         logger.exception(
             "Something went wrong waiting on MPD's Idle event: {}".format(e)
         )
-        return False
 
-    print_song_info(client)
-    return True
+    return False
 
 
 def is_track_scrobbleable(track_info):

@@ -585,7 +585,9 @@ def print_song_info(client):
 
     # Storing duration info in "time" is deprecated, as per the mpd spec,
     # however some servers (namely mopidy) still do this. Bad mopidy, bad.
-    song_duration = float(song["duration"] if "duration" in status else song["time"])
+    song_duration = float(
+        status["duration"] if "duration" in status else status["time"].split(":")[-1]
+    )
 
     title = extract_single(song, "title")
 
@@ -627,7 +629,7 @@ def mpd_wait_for_play(client):
         state = status["state"]
 
         in_suitable_state = state == "play"
-        appropriate_track = is_track_scrobbleable(song)
+        appropriate_track = is_track_scrobbleable(song, status)
 
         # Prevents us from printing song info if we're not switching tracks
         if in_suitable_state and appropriate_track:
@@ -651,7 +653,7 @@ def mpd_wait_for_play(client):
             state = status["state"]
 
             in_suitable_state = state == "play"
-            appropriate_track = is_track_scrobbleable(song)
+            appropriate_track = is_track_scrobbleable(song, status)
 
             logger.info("Received state: {}".format(state))
 
@@ -666,29 +668,40 @@ def mpd_wait_for_play(client):
     return False
 
 
-def is_track_scrobbleable(track_info):
+def is_track_scrobbleable(song, status):
     """
-    Returns true if a track is scrobbleable, e.g. if a track contains the required amount of fields for Last.FM's API
+    Returns true if a track is scrobbleable, e.g. if a track contains the required amount of fields for Last.FM's API and track valid e.g. duration non-zero
 
-    :param track_info: The track_info (generally returned from a currentsong API call)
+    :param song: The info on the track taken from client.currentsong()
+    :param status: The info on the track taken from client.status()
 
-    :type track_info: dict
+    :type song: dict
+    :type status: dict
     :rtype: bool
     """
 
-    def check_field(field, warn=False):
-        if field not in track_info:
+    def check_field(field, source, warn=False):
+        if field not in source:
             message = "Track is not scrobbleable as it has no {} field!".format(field)
             logger.warn(message) if warn else logger.debug(message)
             return False
         return True
 
     # If any of the following are False we are not scrobbleable.
-    scrobbleable = check_field("artist")
-    scrobbleable &= check_field("title")
+    scrobbleable = check_field("artist", song)
+    scrobbleable &= check_field("title", song)
     # We're doing a 'time' check here for mopidy, which uses it: a deprecated call to mpd
-    scrobbleable &= check_field("duration") or check_field("time")
-    scrobbleable &= check_field("album")
+    scrobbleable &= check_field("duration", status) or check_field("time", status)
+    scrobbleable &= check_field("album", song)
+
+    # If all fields present, check that song duration is not zero (would cause div by zero errors)
+    if scrobbleable:
+        song_duration = float(
+            status["duration"]
+            if "duration" in status
+            else status["time"].split(":")[-1]
+        )
+        scrobbleable &= song_duration > 0
 
     return scrobbleable
 

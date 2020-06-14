@@ -384,7 +384,7 @@ def scrobble_tracks(tracks, url, api_key, api_secret, session_key):
             parameters["duration[{}]".format(i)] = extract_single(tracks[i], "duration")
         # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
         # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
-        elif "time" in track_info:
+        elif "time" in tracks[i]:
             parameters["duration[{}]".format(i)] = extract_single(tracks[i], "time")
 
     parameters["api_sig"] = sign_signature(parameters, api_secret)

@@ -328,6 +328,77 @@ def now_playing(track_info, url, api_key, api_secret, session_key):
         logger.debug("Error: {}".format(e))
 
 
+def make_scrobble(
+    track_info,
+    status,
+    timestamp=None,
+    api_key=None,
+    api_secret=None,
+    session_key=None,
+    context=None,
+    method=None,
+):
+    """
+    Return a dictionary representing a signed scrobble or now playing request's
+    parameters. Created from a track's info and the mpd state and additional
+    optional arguments.
+
+    :param track_info: A dictionary of track information taken from mpd
+    :param status: A dictionary containing the player status taken from mpd
+    :param timestamp: An optional UNIX timestamp of when this track was listened to
+    :param api_key: An optional API key
+    :param api_secret: An optional API secret (given to you when you got your API key)
+    :param session_key: An optional Last.FM session key
+    :param method: Specify the api method being called
+    :param context: Client version
+
+    :type track_info: dict
+    :type status: dict
+    :type timestamp: str
+    :type api_key: str
+    :type api_secret: str
+    :type session_key: str
+    :type method: str
+    :type context: str
+    """
+
+    scrobble = {
+        "artist": extract_single(track_info, "artist"),
+        "track": extract_single(track_info, "title"),
+    }
+
+    if "album" in track_info:
+        scrobble["album"] = extract_single(track_info, "album")
+    if "track" in track_info:
+        scrobble["trackNumber"] = extract_single(track_info, "track")
+    # Check for duration/time in status rather than track_info as they won't be present for tracks not
+    # present in the mpd database (ie. streamed tracks)
+    if "duration" in status:
+        scrobble["duration"] = extract_single(status, "duration")
+    # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
+    # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
+    elif "time" in status:
+        scrobble["duration"] = extract_single(status, "time").split(":")[-1]
+
+    optional = [
+        (timestamp, "timestamp"),
+        (api_key, "api_key"),
+        (session_key, "sk"),
+        (method, "method"),
+        (context, "context"),
+    ]
+
+    for (value, key) in optional:
+        if value is not None:
+            scrobble[key] = value
+
+    if api_secret is not None:
+        scrobble["api_sig"] = sign_signature(scrobble, api_secret)
+
+    # logger.info(scrobble)
+    return scrobble
+
+
 def scrobble_tracks(tracks, url, api_key, api_secret, session_key):
     """
     Attempts to scrobble multiple tracks at once to Last.FM

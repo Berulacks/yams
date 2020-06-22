@@ -299,7 +299,7 @@ def now_playing(track_info, status, url, api_key, api_secret, session_key):
         status,
         api_key=api_key,
         api_secret=api_secret,
-        session_key=session_key,
+        sk=session_key,
         method="track.updateNowPlaying",
         context="mpd",
     )
@@ -317,38 +317,21 @@ def now_playing(track_info, status, url, api_key, api_secret, session_key):
         logger.debug("Error: {}".format(e))
 
 
-def make_scrobble(
-    track_info,
-    status,
-    timestamp=None,
-    api_key=None,
-    api_secret=None,
-    session_key=None,
-    context=None,
-    method=None,
-):
+def make_scrobble(track_info, status, api_secret=None, **other):
     """
     Return a dictionary representing a signed scrobble or now playing request's
-    parameters. Created from a track's info and the mpd state and additional
-    optional arguments.
+    parameters. Created from a track's info and the mpd state and any additional
+    key-value pairs passed.
 
     :param track_info: A dictionary of track information taken from mpd
     :param status: A dictionary containing the player status taken from mpd
-    :param timestamp: An optional UNIX timestamp of when this track was listened to
-    :param api_key: An optional API key
-    :param api_secret: An optional API secret (given to you when you got your API key)
-    :param session_key: An optional Last.FM session key
-    :param method: Specify the api method being called
-    :param context: Client version
+    :param api_secret: An optional API secret used to sign scrobble if present
+    :param other: Any other keyword args passed will be added to the scrobble
 
     :type track_info: dict
     :type status: dict
-    :type timestamp: str
-    :type api_key: str
     :type api_secret: str
-    :type session_key: str
-    :type method: str
-    :type context: str
+    :type other: dict
     """
 
     scrobble = {
@@ -369,18 +352,10 @@ def make_scrobble(
     elif "time" in status:
         scrobble["duration"] = extract_single(status, "time").split(":")[-1]
 
-    optional = [
-        (timestamp, "timestamp"),
-        (api_key, "api_key"),
-        (session_key, "sk"),
-        (method, "method"),
-        (context, "context"),
-    ]
+    for key, value in other.items():
+        scrobble[key] = value
 
-    for (value, key) in optional:
-        if value is not None:
-            scrobble[key] = value
-
+    # If api_secret present, use it to sign the scrobble
     if api_secret is not None:
         scrobble["api_sig"] = sign_signature(scrobble, api_secret)
 
@@ -517,7 +492,7 @@ def scrobble_track(
         status,
         timestamp=timestamp,
         api_key=api_key,
-        session_key=session_key,
+        sk=session_key,
         api_secret=api_secret,
         method="track.scrobble",
     )

@@ -276,11 +276,12 @@ In cases like these it makes sense to always extract the first, this function do
     return ""
 
 
-def now_playing(track_info, url, api_key, api_secret, session_key):
+def now_playing(track_info, status, url, api_key, api_secret, session_key):
     """
     Send your currently playing track's info to Last.FM
 
     :param track_info: The track's info from mpd
+    :param status: A dictionary containing the mpd player status
     :param url: The base Last.FM API url
     :param api_key: Your API key
     :param api_secret: Your API secret (given to you when you got your API key)
@@ -293,27 +294,15 @@ def now_playing(track_info, url, api_key, api_secret, session_key):
     :type session_key: str
     """
 
-    parameters = {
-        "method": "track.updateNowPlaying",
-        "artist": extract_single(track_info, "artist"),
-        "track": extract_single(track_info, "title"),
-        "context": "mpd",
-        "api_key": api_key,
-        "sk": session_key,
-    }
-
-    if "album" in track_info:
-        parameters["album"] = extract_single(track_info, "album")
-    if "track" in track_info:
-        parameters["trackNumber"] = extract_single(track_info, "track")
-    if "duration" in track_info:
-        parameters["duration"] = extract_single(track_info, "duration")
-    # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
-    # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
-    elif "time" in track_info:
-        parameters["duration"] = extract_single(track_info, "time")
-
-    parameters["api_sig"] = sign_signature(parameters, api_secret)
+    parameters = make_scrobble(
+        track_info,
+        status,
+        api_key=api_key,
+        api_secret=api_secret,
+        sk=session_key,
+        method="track.updateNowPlaying",
+        context="mpd",
+    )
 
     # logger.info(parameters)
 
@@ -326,6 +315,52 @@ def now_playing(track_info, url, api_key, api_secret, session_key):
     except Exception as e:
         logger.warn("Could not send now playing Last.FM!")
         logger.debug("Error: {}".format(e))
+
+
+def make_scrobble(track_info, status, api_secret=None, **other):
+    """
+    Return a dictionary representing a signed scrobble or now playing request's
+    parameters. Created from a track's info and the mpd state and any additional
+    key-value pairs passed.
+
+    :param track_info: A dictionary of track information taken from mpd
+    :param status: A dictionary containing the player status taken from mpd
+    :param api_secret: An optional API secret used to sign scrobble if present
+    :param other: Any other keyword args passed will be added to the scrobble
+
+    :type track_info: dict
+    :type status: dict
+    :type api_secret: str
+    :type other: dict
+    """
+
+    scrobble = {
+        "artist": extract_single(track_info, "artist"),
+        "track": extract_single(track_info, "title"),
+    }
+
+    if "album" in track_info:
+        scrobble["album"] = extract_single(track_info, "album")
+    if "track" in track_info:
+        scrobble["trackNumber"] = extract_single(track_info, "track")
+    # Check for duration/time in status rather than track_info as they won't be present for tracks not
+    # present in the mpd database (ie. streamed tracks)
+    if "duration" in status:
+        scrobble["duration"] = extract_single(status, "duration")
+    # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
+    # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
+    elif "time" in status:
+        scrobble["duration"] = extract_single(status, "time").split(":")[-1]
+
+    for key, value in other.items():
+        scrobble[key] = value
+
+    # If api_secret present, use it to sign the scrobble
+    if api_secret is not None:
+        scrobble["api_sig"] = sign_signature(scrobble, api_secret)
+
+    # logger.info(scrobble)
+    return scrobble
 
 
 def scrobble_tracks(tracks, url, api_key, api_secret, session_key):
@@ -369,7 +404,7 @@ def scrobble_tracks(tracks, url, api_key, api_secret, session_key):
     for i in range(0, max_scrobbles):
         logger.debug("Adding {} to mass scrobble request.".format(tracks[i]))
         # We probably don't need to use the extract_single's, here, but better safe than sorry!
-        parameters["track[{}]".format(i)] = extract_single(tracks[i], "title")
+        parameters["track[{}]".format(i)] = extract_single(tracks[i], "track")
         parameters["artist[{}]".format(i)] = extract_single(tracks[i], "artist")
         parameters["timestamp[{}]".format(i)] = extract_single(tracks[i], "timestamp")
 
@@ -382,10 +417,6 @@ def scrobble_tracks(tracks, url, api_key, api_secret, session_key):
 
         if "duration" in tracks[i]:
             parameters["duration[{}]".format(i)] = extract_single(tracks[i], "duration")
-        # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
-        # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
-        elif "time" in track_info:
-            parameters["duration[{}]".format(i)] = extract_single(tracks[i], "time")
 
     parameters["api_sig"] = sign_signature(parameters, api_secret)
 
@@ -428,48 +459,14 @@ def scrobble_tracks(tracks, url, api_key, api_secret, session_key):
     return 0, 0
 
 
-def record_failed_scrobble(track_info, timestamp, failed_scrobbles, cache_file_path):
-    """
-    Adds a failed scrobble to the cached list of failed scrobbles, and writes them all to disk.
-
-    :param track_info: A dictionary of track information from mpd
-    :param timestamp: A UNIX timestamp of when this track was listened to
-    :param failed_scrobbles: The list of failed scrobbles to append this to
-    :param cache_file_path: The file path of the scrobbles cache (to write to disk)
-
-    :type track_info: dict
-    :type timestamp: str
-    :type failed_scrobbles: list
-    :type cache_file_path: str
-    """
-
-    failed_scrobble = {
-        "artist": extract_single(track_info, "artist"),
-        "title": extract_single(track_info, "title"),
-        "timestamp": timestamp,
-    }
-
-    if "album" in track_info:
-        failed_scrobble["album"] = extract_single(track_info, "album")
-    if "track" in track_info:
-        failed_scrobble["trackNumber"] = extract_single(track_info, "track")
-    if "duration" in track_info:
-        failed_scrobble["duration"] = extract_single(track_info, "duration")
-    # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
-    # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
-    elif "time" in track_info:
-        failed_scrobble["duration"] = extract_single(track_info, "time")
-
-    if failed_scrobble not in failed_scrobbles:
-        failed_scrobbles.append(failed_scrobble)
-        save_failed_scrobbles_to_disk(cache_file_path, failed_scrobbles)
-
-
-def scrobble_track(track_info, timestamp, url, api_key, api_secret, session_key):
+def scrobble_track(
+    track_info, status, timestamp, url, api_key, api_secret, session_key
+):
     """
     Scrobble your track with Last.FM
 
     :param track_info: The track's info from mpd
+    :param status: A dictionary containing the mpd player status
     :param timestamp: The starting time of the track, as a UTC Unix Timestamp (seconds since the Epoch)
     :param url: The base Last.FM API url
     :param api_key: Your API key
@@ -477,34 +474,24 @@ def scrobble_track(track_info, timestamp, url, api_key, api_secret, session_key)
     :param session_key: Your Last.FM session key
 
     :type track_info: dict
+    :type status: dict
     :param timestamp: int
     :type url: str
     :type api_key: str
     :type api_secret: str
     :type session_key: str
     """
+
     logger.info("Scrobbling!")
-    parameters = {
-        "method": "track.scrobble",
-        "artist": extract_single(track_info, "artist"),
-        "timestamp": timestamp,
-        "track": extract_single(track_info, "title"),
-        "api_key": api_key,
-        "sk": session_key,
-    }
-
-    if "album" in track_info:
-        parameters["album"] = extract_single(track_info, "album")
-    if "track" in track_info:
-        parameters["trackNumber"] = extract_single(track_info, "track")
-    if "duration" in track_info:
-        parameters["duration"] = extract_single(track_info, "duration")
-    # We do this for older clients, such as mopidy, that use the "time" variable to send duration data
-    # Which is deprecated according to the mpd protocol. Oh well. Bad mopidy, bad.
-    elif "time" in track_info:
-        parameters["duration"] = extract_single(track_info, "time")
-
-    parameters["api_sig"] = sign_signature(parameters, api_secret)
+    parameters = make_scrobble(
+        track_info,
+        status,
+        timestamp=timestamp,
+        api_key=api_key,
+        sk=session_key,
+        api_secret=api_secret,
+        method="track.scrobble",
+    )
 
     try:
         xml = make_request(url, parameters, True)
@@ -858,7 +845,7 @@ def mpd_watch_track(client, session, config):
                         ),
                     )
                 )
-                now_playing(song, base_url, api_key, api_secret, session)
+                now_playing(song, status, base_url, api_key, api_secret, session)
 
             elif current_watched_track == title:
 
@@ -879,18 +866,34 @@ def mpd_watch_track(client, session, config):
                         if len(failed_scrobbles) < 1:
                             # If we don't have any pending scrobbles, try to scrobble this
                             scrobble_succeeded = scrobble_track(
-                                song, start_time, base_url, api_key, api_secret, session
+                                song,
+                                status,
+                                start_time,
+                                base_url,
+                                api_key,
+                                api_secret,
+                                session,
                             )
                             # If we've failed, add it to the list for future scrobbles (and write it to the disk)
                             if not scrobble_succeeded:
-                                record_failed_scrobble(
-                                    song, start_time, failed_scrobbles, cache_file_path
+                                failed_scrobble = make_scrobble(
+                                    song, status, timestamp=start_time
                                 )
+                                if failed_scrobble not in failed_scrobbles:
+                                    failed_scrobbles.append(failed_scrobble)
+                                    save_failed_scrobbles_to_disk(
+                                        cache_file_path, failed_scrobbles
+                                    )
                         else:
                             # If we have failed and queued up scrobbles, add this one to the list and try to do them all in one go
-                            record_failed_scrobble(
-                                song, start_time, failed_scrobbles, cache_file_path
+                            failed_scrobble = make_scrobble(
+                                song, status, timestamp=start_time
                             )
+                            if failed_scrobble not in failed_scrobbles:
+                                failed_scrobbles.append(failed_scrobble)
+                                save_failed_scrobbles_to_disk(
+                                    cache_file_path, failed_scrobbles
+                                )
                             accepted_count, submitted_count = scrobble_tracks(
                                 failed_scrobbles, base_url, api_key, api_secret, session
                             )

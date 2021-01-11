@@ -215,6 +215,7 @@ def is_pid_running(config):
 
 def watch_log(path):
     logger.info("Attaching to {}, press Ctrl-C to exit.".format(path))
+    logger.info("\n\nv--- * * * Log output starts here * * * ---v\n")
 
     try:
 

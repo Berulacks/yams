@@ -11,6 +11,7 @@
             <string>-m</string>
             <string>yams</string>
             <string>-N</string>
+            <string>--keep-alive</string>
             <!--
             Optional, use YAMS directly:
             <string>/Users/<your_user_name>/Library/Python/<version>/bin/yams</string>

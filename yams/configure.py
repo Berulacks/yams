@@ -328,6 +328,9 @@ def process_cli_args():
         "--disable-log", action="store_true", help="Disable the log? Default: False"
     )
     parser.add_argument(
+        "--keep-alive", action="store_true", help="If set to True will not exit on initial MPD connection failure. (E.g. always reconnect) Default: False"
+    )
+    parser.add_argument(
         "-a",
         "--attach",
         action="store_true",
@@ -453,6 +456,8 @@ def configure():
         config["log_file"] = args.log_file
     if args.cache_file:
         config["cache_file"] = args.cache_file
+    if args.keep_alive:
+        config["keep_alive"] = args.keep_alive
 
     # 5 Sanity check
     if (

@@ -1059,6 +1059,10 @@ def cli_run():
         session_file, base_url, api_key, api_secret, interactive_shell_available
     )
 
+    keep_alive = config["keep_alive"] if "keep_alive" in config else False
+
+    client = None
+
     try:
         client = connect_to_mpd(mpd_host, mpd_port)
     except Exception as e:
@@ -1067,7 +1071,10 @@ def cli_run():
                 e
             )
         )
-        exit(1)
+        if not keep_alive:
+            exit(1)
+        else:
+            logger.warn("Not dying, will keep alive and wait for MPD.")
 
     # If we're allowed to daemonize, do so
     if "no_daemon" in config:
@@ -1102,10 +1109,14 @@ def cli_run():
             except Exception:
                 logger.exception("Something went very wrong!")
                 break
+        # We have no client, so we're not connected to MPD... wait for a connection to happen, or quit.
         else:
-            time.sleep(RECONNECT_TIMEOUT)
             try:
+                time.sleep(RECONNECT_TIMEOUT)
                 client = connect_to_mpd(mpd_host, mpd_port)
+            except KeyboardInterrupt:
+                logger.info("Keyboard Interrupt detected - Exiting!")
+                break
             except Exception as e:
                 # Don't know if this is cached anywhere - could cause some large log files so I'm leaving it commented out until I know more.
                 # logger.debug("Could not connect to MPD! Check that your config is correct and that MPD is running. Error: {}".format(e))

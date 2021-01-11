@@ -52,13 +52,15 @@ A Systemd user service unit file is included in the root of this repository (nam
 
 To install, copy it to `~/.config/systemd/user/` and run `systemctl --user enable --now yams` to enable/start it. Note that you should also [start mpd as a Systemd service](https://wiki.archlinux.org/index.php/Music_Player_Daemon#Autostart_with_systemd) to ensure YAMS actually loads up at the right time. You might also need to edit the path to the python binary in the unit file if your system python version is installed anywhere other than `/usr/bin/python3`.
 
+*Note: If you can't start MPD as a service before yams, make sure to use the `--keep-alive` argument to prevent YAMS from shutting down after failing to connect to MPD.*
+
 ### Via Launchd (OS X)
 
 OS X users can use the `yams.plist` file at the root of this repository to automate starting/stopping YAMS via OS X's built-in `launchd`. Note that this file must be installed manually.
 
 To load the program, copy `yams.plist` to: `$HOME/Library/LaunchAgents/`
 
-To start YAMS, either re-login, or run `launchctl load ~/Library/LaunchAgents/yams.plist`
+To start YAMS, either re-login, or run `launchctl load -w ~/Library/LaunchAgents/yams.plist`
 
 Once loaded, check that everything is running fine with `yams -a`
 
@@ -83,9 +85,9 @@ Here's the output for `--help`:
     usage: YAMS [-h] [-m 127.0.0.1] [-p 6600] [-s ./.lastfm_session]
                 [--api-key API_KEY] [--api-secret API_SECRET] [-t 50] [-r] [-d]
                 [-g] [-l /path/to/log] [-c /path/to/cache] [-C ~/my_config] [-N]
-                [-D] [-k] [--disable-log] [-a]
+                [-D] [-k] [--disable-log] [--keep-alive] [-a]
 
-    Yet Another Mpd Scrobbler, v0.5. Configuration directories are either
+    Yet Another Mpd Scrobbler, v0.7.3. Configuration directories are either
     ~/.config/yams, ~/.yams, or your current working directory. Create one of
     these paths if need be.
 
@@ -132,6 +134,8 @@ Here's the output for `--help`:
       -k, --kill-daemon     Will kill the daemon if running - will fail otherwise.
                             Default: False
       --disable-log         Disable the log? Default: False
+      --keep-alive          If set to True will not exit on initial MPD connection
+                            failure. (E.g. always reconnect) Default: False
       -a, --attach          Runs "tail -F" on a running instance of yams' log
                             file. "Attaches" to it, for all intents and purposes.
                             NB: You will still need to kill it by hand. Default:

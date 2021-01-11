@@ -328,7 +328,9 @@ def process_cli_args():
         "--disable-log", action="store_true", help="Disable the log? Default: False"
     )
     parser.add_argument(
-        "--keep-alive", action="store_true", help="If set to True will not exit on initial MPD connection failure. (E.g. always reconnect) Default: False"
+        "--keep-alive",
+        action="store_true",
+        help="If set to True will not exit on initial MPD connection failure. (E.g. always reconnect) Default: False",
     )
     parser.add_argument(
         "-a",

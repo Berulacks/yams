@@ -247,17 +247,17 @@ def save_credentials(session_filepath, user_name, session_key):
 
 def extract_single(container, key):
     """
-    Sometimes mpd will report an array inside its track info (e.g. 3 artists instead of 1)
-In cases like these it makes sense to always extract the first, this function does that.
-    Also prevents crashing if something's gone wrong.
+        Sometimes mpd will report an array inside its track info (e.g. 3 artists instead of 1)
+    In cases like these it makes sense to always extract the first, this function does that.
+        Also prevents crashing if something's gone wrong.
 
-    :param container: The dictionary being searched
-    :param key: The key to use in the dict
+        :param container: The dictionary being searched
+        :param key: The key to use in the dict
 
-    :type container: dict
-    :type key: object
+        :type container: dict
+        :type key: object
 
-    :rtype: object
+        :rtype: object
     """
 
     if key in container:

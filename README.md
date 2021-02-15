@@ -32,6 +32,13 @@ If you're an Arch Linux user you may use the [python-yams](https://aur.archlinux
 ### From Source
 Clone this repo and run `pip3 install --user -e <path_to_repo>` (omit the `-e` flag if you don't want changes in the repo to be reflected in your local installation; likewise one can omit the `--user` flag for a system-wide installation, though it's really not recommended).
 
+### Unofficial Sources
+
+_Please note that these are not official builds, and are not vouched for by YAMS' maintainer. It's up to you to do your due diligence and ensure you're not installing anything nasty.
+If you aren't comfortable with that, please consider using one of the official methods, listed above._
+
+* **Gentoo Ebuild:** A user of YAMS has helpfully started maintaining ebuilds of the software, available via [their Portage Overlay](https://github.com/myrvogna/myrvolay). 
+
 ## Running
 
 The script includes a `yams` script that will be installed by pip.

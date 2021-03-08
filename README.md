@@ -37,7 +37,7 @@ Clone this repo and run `pip3 install --user -e <path_to_repo>` (omit the `-e` f
 _Please note that these are not official builds, and are not vouched for by YAMS' maintainer. It's up to you to do your due diligence and ensure you're not installing anything nasty.
 If you aren't comfortable with that, please consider using one of the official methods, listed above._
 
-* **Gentoo Ebuild:** A user of YAMS has helpfully started maintaining ebuilds of the software, available via [their Portage Overlay](https://github.com/myrvogna/myrvolay). 
+* **Gentoo Ebuild:** A user of YAMS has [helpfully started maintaining ebuilds](https://github.com/Berulacks/yams/issues/11) of the software. The ebuilds are available via Gentoo's [GURU repository](https://wiki.gentoo.org/wiki/Project:GURU).
 
 ## Running
 

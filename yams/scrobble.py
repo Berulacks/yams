@@ -343,6 +343,8 @@ def make_scrobble(track_info, status, api_secret=None, **other):
         scrobble["album"] = extract_single(track_info, "album")
     if "track" in track_info:
         scrobble["trackNumber"] = extract_single(track_info, "track")
+    if "albumartist" in track_info:
+        scrobble["albumArtist"] = extract_single(track_info, "albumartist")
     # Check for duration/time in status rather than track_info as they won't be present for tracks not
     # present in the mpd database (ie. streamed tracks)
     if "duration" in status:
@@ -415,6 +417,8 @@ def scrobble_tracks(tracks, url, api_key, api_secret, session_key):
                 tracks[i], "trackNumber"
             )
 
+        if "albumArtist" in tracks[i]:
+            parameters["albumArtist[{}]".format(i)] = extract_single(tracks[i], "albumArtist")
         if "duration" in tracks[i]:
             parameters["duration[{}]".format(i)] = extract_single(tracks[i], "duration")
 

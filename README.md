@@ -1,3 +1,9 @@
+MY YAMS FORK
+============
+
+Wanted to update MPD's sticker db on play to keep track of how many times songs have been played.
+After considering many options realised i had been using YAMS for so long and it already is watching MPD for song plays so the easiest method would be to add a couple lines to it.
+
 YAMS
 ====
 

@@ -3,7 +3,7 @@
 import requests, hashlib
 import xml.etree.ElementTree as ET
 from mpd import MPDClient
-from mpd.base import ConnectionError
+from mpd.base import ConnectionError, CommandError
 import select
 from pathlib import Path
 import time
@@ -862,6 +862,31 @@ def mpd_watch_track(client, session, config):
                         or real_time_elapsed
                         >= (scrobble_threshold / 100) * song_duration
                     ):
+                        # Update "played" sticker db
+                        try:
+                            # Extract current "played" value
+                            played = int(
+                                client.sticker_get(
+                                    "song", song["file"], "played"
+                                )
+                            )
+                        # This error could be either the song doesnt have the
+                        # sticker or stickers arent activated in the mpd session
+                        except CommandError:
+                            # So if it the first, set the numer to 0
+                            played = 0
+                        try:
+                            # Set the number to the last number + 1
+                            client.sticker_set(
+                                "song", song["file"], "played", played + 1
+                            )
+                        # And this handles if it was actually that the mpd
+                        # session doesnt have the sticker db active
+                        except CommandError:
+                            logger.error(
+                                "Couldn't update sticker db. MPD sticker db not active"
+                            )
+
                         current_watched_track = ""
                         if len(failed_scrobbles) < 1:
                             # If we don't have any pending scrobbles, try to scrobble this

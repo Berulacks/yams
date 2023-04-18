@@ -635,7 +635,7 @@ def mpd_wait_for_play(client):
             # We're not 'play'ing, so lets wait until the state changes
             changes = client.idle("player")
             logger.info(
-                "Recieved event in subsystem: {}".format(changes)
+                "Received event in subsystem: {}".format(changes)
             )  # handle changes
 
             # The state has now changed
@@ -910,7 +910,7 @@ def mpd_watch_track(client, session, config):
                             reject_track = title
                     else:
                         logger.warn(
-                            "Can't scrobble yet, time elapsed ({}s) < adjustted duration ({}s)".format(
+                            "Can't scrobble yet, time elapsed ({}s) < adjusted duration ({}s)".format(
                                 real_time_elapsed,
                                 (scrobble_threshold / 100) * song_duration,
                             )

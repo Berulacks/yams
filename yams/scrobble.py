@@ -3,6 +3,7 @@
 import hashlib
 import os
 import logging
+import importlib.metadata
 from pathlib import Path
 import select
 from sys import exit
@@ -1048,7 +1049,7 @@ def cli_run():
 
     session = ""
     config = configure()
-    logger.info("Starting up YAMS v{}".format(yams.VERSION))
+    logger.info("Starting up YAMS v{}".format(importlib.metadata.version("YAMScrobbler")))
 
     session_file = config["session_file"]
     base_url = config["base_url"]

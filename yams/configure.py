@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import importlib.metadata
 import logging
 from pathlib import Path
 import signal
@@ -240,7 +241,7 @@ def process_cli_args():
     parser = argparse.ArgumentParser(
         prog="YAMS",
         description="Yet Another Mpd Scrobbler, v{}. Configuration directories are either ~/.config/yams, ~/.yams, or your current working directory. Create one of these paths if need be.".format(
-            VERSION
+            importlib.metadata.version("YAMScrobbler")
         ),
     )
     parser.add_argument(

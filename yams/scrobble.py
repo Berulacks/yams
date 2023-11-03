@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import atexit
 import hashlib
 import os
 import logging
@@ -996,6 +997,11 @@ def save_pid(file_path, pid=None):
         pid_file.writelines(str(pid) + "\n")
         logger.info("Wrote PID to file: {}".format(file_path))
 
+    atexit.register(rm_pid_atexit, Path(file_path))
+
+def rm_pid_atexit(pid_file_path):
+    "Delete pid file atexit handler"
+    pid_file_path.unlink()
 
 def fork(config):
     """

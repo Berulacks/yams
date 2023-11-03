@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 
-import requests, hashlib
+import hashlib
+import os
+import logging
+from pathlib import Path
+import select
+from sys import exit
+import time
 import xml.etree.ElementTree as ET
+
+import requests
 from mpd import MPDClient
 from mpd.base import ConnectionError
-import select
-from pathlib import Path
-import time
-import logging
 import yaml
-import os
-from sys import exit
 
 from yams.configure import configure, remove_log_stream_of_type
 import yams

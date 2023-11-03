@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
 import argparse
 import os
-import yaml
-import signal
 import logging
+from pathlib import Path
+import signal
 import subprocess
-import psutil
-from yams import VERSION
 from sys import exit
+
+import psutil
+import yaml
 
 HOME = str(Path.home())
 LOGGING_ENABLED = False

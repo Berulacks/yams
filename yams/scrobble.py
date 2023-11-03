@@ -5,6 +5,7 @@ import os
 import logging
 import importlib.metadata
 from pathlib import Path
+import platformdirs
 import select
 from sys import exit
 import time
@@ -15,8 +16,7 @@ from mpd import MPDClient
 from mpd.base import ConnectionError
 import yaml
 
-from yams.configure import configure, remove_log_stream_of_type
-import yams
+from yams.configure import configure, remove_log_stream_of_type,  DEFAULT_CACHE_FILENAME
 
 MAX_TRACKS_PER_SCROBBLE = 50
 SCROBBLE_RETRY_INTERVAL = 10
@@ -24,7 +24,8 @@ SCROBBLE_DISK_SAVE_INTERVAL = 1200
 
 logger = logging.getLogger("yams")
 
-SCROBBLES = str(Path(Path.home(), ".config/yams/scrobbles.cache"))
+SCROBBLES = str(Path(platformdirs.user_cache_dir(appname="yams"),
+                     DEFAULT_CACHE_FILENAME))
 
 
 def save_failed_scrobbles_to_disk(path, scrobbles):

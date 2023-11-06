@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
 import argparse
 import os
-import yaml
-import signal
+import importlib.metadata
 import logging
+from pathlib import Path
+import signal
 import subprocess
-import psutil
-from yams import VERSION
 from sys import exit
+
+import psutil
+import yaml
 
 HOME = str(Path.home())
 LOGGING_ENABLED = False
@@ -240,7 +241,7 @@ def process_cli_args():
     parser = argparse.ArgumentParser(
         prog="YAMS",
         description="Yet Another Mpd Scrobbler, v{}. Configuration directories are either ~/.config/yams, ~/.yams, or your current working directory. Create one of these paths if need be.".format(
-            VERSION
+            importlib.metadata.version("YAMScrobbler")
         ),
     )
     parser.add_argument(

@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 
-import requests, hashlib
+import atexit
+import hashlib
+import os
+import logging
+import importlib.metadata
+from pathlib import Path
+import platformdirs
+import select
+from sys import exit
+import time
 import xml.etree.ElementTree as ET
+
+import requests
 from mpd import MPDClient
 from mpd.base import ConnectionError
-import select
-from pathlib import Path
-import time
-import logging
 import yaml
-import os
-from sys import exit
 
-from yams.configure import configure, remove_log_stream_of_type
-import yams
+from yams.configure import configure, remove_log_stream_of_type,  DEFAULT_CACHE_FILENAME
 
 MAX_TRACKS_PER_SCROBBLE = 50
 SCROBBLE_RETRY_INTERVAL = 10
@@ -21,7 +25,8 @@ SCROBBLE_DISK_SAVE_INTERVAL = 1200
 
 logger = logging.getLogger("yams")
 
-SCROBBLES = str(Path(Path.home(), ".config/yams/scrobbles.cache"))
+SCROBBLES = str(Path(platformdirs.user_cache_dir(appname="yams"),
+                     DEFAULT_CACHE_FILENAME))
 
 
 def save_failed_scrobbles_to_disk(path, scrobbles):
@@ -992,6 +997,11 @@ def save_pid(file_path, pid=None):
         pid_file.writelines(str(pid) + "\n")
         logger.info("Wrote PID to file: {}".format(file_path))
 
+    atexit.register(rm_pid_atexit, Path(file_path))
+
+def rm_pid_atexit(pid_file_path):
+    "Delete pid file atexit handler"
+    pid_file_path.unlink()
 
 def fork(config):
     """
@@ -1046,7 +1056,7 @@ def cli_run():
 
     session = ""
     config = configure()
-    logger.info("Starting up YAMS v{}".format(yams.VERSION))
+    logger.info("Starting up YAMS v{}".format(importlib.metadata.version("YAMScrobbler")))
 
     session_file = config["session_file"]
     base_url = config["base_url"]

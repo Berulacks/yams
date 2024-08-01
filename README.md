@@ -104,7 +104,7 @@ Here's the output for `--help`:
     ~/.config/yams, ~/.yams, or your current working directory. Create one of
     these paths if need be.
 
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       -m 127.0.0.1, --mpd-host 127.0.0.1
                             Your MPD instance's host
@@ -112,7 +112,8 @@ Here's the output for `--help`:
                             Your MPD instance's port
       -s ./.lastfm_session, --session-file-path ./.lastfm_session
                             Where to read in/save your session file to. Defaults
-                            to inside your config directory.
+                            to inside your $XDG_STATE_HOME directory. (Default:
+                            '$HOME"/.local/state/yams')
       --api-key API_KEY     Your last.fm api key
       --api-secret API_SECRET
                             Your last.fm api secret
@@ -132,13 +133,14 @@ Here's the output for `--help`:
                             that to be the default. Default: False
       -l /path/to/log, --log-file /path/to/log
                             Full path to a log file. If not set, a log file called
-                            "yams.log" will be placed in the current config
-                            directory.
+                            "yams.log" will be placed in $XDG_STATE_HOME.
+                            (Default:"$HOME"/.local/state")
       -c /path/to/cache, --cache-file /path/to/cache
                             Full path to the scrobbles cache file. This stores
                             failed scrobbles for upload at a later date. If not
                             set, a log file called "scrobbles.cache" will be
-                            placed in the current config directory.
+                            placed in the $XDG_CACHE_HOME.
+                            (Default:"$HOME"/.cache")
       -C ~/my_config, --config ~/my_config
                             Your config to read
       -N, --no-daemon       If set to true, program will not be run as a daemon

@@ -9,7 +9,7 @@ url="https://github.com/Berulacks/yams"
 license=('GPL3')
 depends=('python' 'mpd' 'python-pyaml' 'python-mpd2' 'python-requests' 'python-psutil')
 makedepends=('python-setuptools')
-source=("${pkgname}::git://github.com/Berulacks/yams.git")
+source=("${pkgname}::git+https://github.com/Berulacks/yams")
 sha256sums=('SKIP')
 pkgver() {
   cd "$pkgname"

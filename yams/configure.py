@@ -72,7 +72,7 @@ def read_from_file(path, working_config):
 
 
 def bootstrap_config():
-    """ Creates a config directory and writes a suitable base config into it"""
+    """Creates a config directory and writes a suitable base config into it"""
 
     # No custom home directory was found, lets create one
 
@@ -81,8 +81,9 @@ def bootstrap_config():
 
     default_config = DEFAULTS
 
-    default_config["session_file"] = str(Path(platformdirs.user_state_dir(
-        appname="yams"), DEFAULT_SESSION_FILENAME))
+    default_config["session_file"] = str(
+        Path(platformdirs.user_state_dir(appname="yams"), DEFAULT_SESSION_FILENAME)
+    )
 
     # Lets recognize environment variables by the user
     if "MPD_HOST" in os.environ:
@@ -96,7 +97,7 @@ def bootstrap_config():
 
 
 def get_home_dir():
-    """ Returns the home directory for YAMS files (not to be confused with your system home directory """
+    """Returns the home directory for YAMS files (not to be confused with your system home directory"""
 
     home = "."
 
@@ -238,7 +239,7 @@ def watch_log(path):
 
 
 def process_cli_args():
-    """ Process command line arguments"""
+    """Process command line arguments"""
 
     parser = argparse.ArgumentParser(
         prog="YAMS",
@@ -424,14 +425,14 @@ def configure():
     # 1 Defaults:
     config = DEFAULTS
     # 1.2 Home dependent defaults:
-    config["session_file"] = str(Path(app_dirs.user_state_dir,
-                                      DEFAULT_SESSION_FILENAME))
-    config["log_file"] = str(Path(app_dirs.user_state_dir,
-                                  LOG_FILE_NAME))
-    config["pid_file"] = str(Path(platformdirs.user_runtime_dir(),
-                             DEFAULT_PID_FILENAME))
-    config["cache_file"] = str(Path(app_dirs.user_cache_dir,
-                                    DEFAULT_CACHE_FILENAME))
+    config["session_file"] = str(
+        Path(app_dirs.user_state_dir, DEFAULT_SESSION_FILENAME)
+    )
+    config["log_file"] = str(Path(app_dirs.user_state_dir, LOG_FILE_NAME))
+    config["pid_file"] = str(
+        Path(platformdirs.user_runtime_dir(), DEFAULT_PID_FILENAME)
+    )
+    config["cache_file"] = str(Path(app_dirs.user_cache_dir, DEFAULT_CACHE_FILENAME))
     # 2 Environment variables
     if "MPD_HOST" in os.environ:
         config["mpd_host"] = os.environ["MPD_HOST"]

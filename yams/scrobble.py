@@ -17,7 +17,7 @@ from mpd import MPDClient
 from mpd.base import ConnectionError
 import yaml
 
-from yams.configure import configure, remove_log_stream_of_type,  DEFAULT_CACHE_FILENAME
+from yams.configure import configure, remove_log_stream_of_type, DEFAULT_CACHE_FILENAME
 
 MAX_TRACKS_PER_SCROBBLE = 50
 SCROBBLE_RETRY_INTERVAL = 10
@@ -25,8 +25,9 @@ SCROBBLE_DISK_SAVE_INTERVAL = 1200
 
 logger = logging.getLogger("yams")
 
-SCROBBLES = str(Path(platformdirs.user_cache_dir(appname="yams"),
-                     DEFAULT_CACHE_FILENAME))
+SCROBBLES = str(
+    Path(platformdirs.user_cache_dir(appname="yams"), DEFAULT_CACHE_FILENAME)
+)
 
 
 def save_failed_scrobbles_to_disk(path, scrobbles):
@@ -423,7 +424,9 @@ def scrobble_tracks(tracks, url, api_key, api_secret, session_key):
             )
 
         if "albumArtist" in tracks[i]:
-            parameters["albumArtist[{}]".format(i)] = extract_single(tracks[i], "albumArtist")
+            parameters["albumArtist[{}]".format(i)] = extract_single(
+                tracks[i], "albumArtist"
+            )
         if "duration" in tracks[i]:
             parameters["duration[{}]".format(i)] = extract_single(tracks[i], "duration")
 
@@ -999,9 +1002,11 @@ def save_pid(file_path, pid=None):
 
     atexit.register(rm_pid_atexit, Path(file_path))
 
+
 def rm_pid_atexit(pid_file_path):
     "Delete pid file atexit handler"
     pid_file_path.unlink()
+
 
 def fork(config):
     """
@@ -1052,11 +1057,13 @@ def connect_to_mpd(host, port):
 
 
 def cli_run():
-    """ Command line entrypoint """
+    """Command line entrypoint"""
 
     session = ""
     config = configure()
-    logger.info("Starting up YAMS v{}".format(importlib.metadata.version("YAMScrobbler")))
+    logger.info(
+        "Starting up YAMS v{}".format(importlib.metadata.version("YAMScrobbler"))
+    )
 
     session_file = config["session_file"]
     base_url = config["base_url"]

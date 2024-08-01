@@ -81,9 +81,15 @@ Run `yams` and follow the printed instructions to authenticate with Last.FM
 
 ### Configuration Files
 
-If it can't find a config file by default, YAMS will create a default config file, log, cache, and session file in `$HOME/.config/yams`, however it will also accept config files in `$HOME/.yams` or `./.yams` (theoretically configs in `$HOME` or the current working directory can be read in, as well).
+If it can't find a config file by default, YAMS will create a default config file, log, cache, and session file.
 
-YAMS will only create its own directory/configuration file if none of the previous directories exist.
+* `yams.yml`: The primary configuration file will be placed in your user config dir (usually `$XDG_CONFIG_HOME`).
+* `yams.pid`: The PID file will be placed in your user runtime dir (usually `$XDG_RUNTIME_DIR`).
+* `yams.log`: The primary log file will be placed in your user state directory (usually `$XDG_STATE_HOME`).
+* `.lastfm_session`: The session file will also be placed in your user state directory.
+* `scrobbles.cache`: The failed scrobbles cache will be placed in your user cache directory (usually `$XDG_CACHE_HOME`).
+
+The locations of these folders are different for every platform, consult [platformdirs](https://github.com/platformdirs/platformdirs) for more info.
 
 ### Help
 

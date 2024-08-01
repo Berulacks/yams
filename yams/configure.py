@@ -261,7 +261,9 @@ def process_cli_args():
         "-s",
         "--session-file-path",
         type=str,
-        help="Where to read in/save your session file to. Defaults to inside your config directory.",
+        help="Where to read in/save your session file to. Defaults to inside your $XDG_STATE_HOME directory. (Default: '{}')".format(
+            platformdirs.user_state_dir(appname="yams")
+        ),
         metavar="./.lastfm_session",
     )
     parser.add_argument(
@@ -299,7 +301,9 @@ def process_cli_args():
         "-l",
         "--log-file",
         type=str,
-        help='Full path to a log file. If not set, a log file called "yams.log" will be placed in the current config directory.',
+        help='Full path to a log file. If not set, a log file called "yams.log" will be placed in $XDG_STATE_HOME. (Default:"{}")'.format(
+            platformdirs.user_state_dir()
+        ),
         default=None,
         metavar="/path/to/log",
     )
@@ -307,7 +311,9 @@ def process_cli_args():
         "-c",
         "--cache-file",
         type=str,
-        help='Full path to the scrobbles cache file. This stores failed scrobbles for upload at a later date. If not set, a log file called "scrobbles.cache" will be placed in the current config directory.',
+        help='Full path to the scrobbles cache file. This stores failed scrobbles for upload at a later date. If not set, a log file called "scrobbles.cache" will be placed in the $XDG_CACHE_HOME. (Default:"{}")'.format(
+            platformdirs.user_cache_dir()
+        ),
         default=None,
         metavar="/path/to/cache",
     )
@@ -372,6 +378,12 @@ def set_log_file(path, level=logging.INFO):
     )
     # Remove old log handlers
     remove_log_stream_of_type(logging.FileHandler)
+
+    # Not everyone will have the requisite path to make this file
+    parent_path = Path(path).parent
+
+    if not parent_path.exists():
+        parent_path.mkdir(parents=True, exist_ok=True)
 
     fh = logging.FileHandler(path)
     fh.setLevel(level)

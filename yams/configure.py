@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
 import argparse
 import os
-import yaml
-import signal
+import importlib.metadata
 import logging
+from pathlib import Path
+import signal
 import subprocess
-import psutil
-from yams import VERSION
 from sys import exit
+
+import platformdirs
+import psutil
+import yaml
 
 HOME = str(Path.home())
 LOGGING_ENABLED = False
 
 PROGRAM_HOMES = [
-    "{}/.config/yams".format(HOME),
+    platformdirs.user_config_dir(appname="yams"),
     "{}/.yams".format(HOME),
     "./.yams",
     ".",
     HOME,
 ]
 
-CREATE_IF_NOT_EXISTS_HOME = "{}/.config/yams".format(HOME)
+CREATE_IF_NOT_EXISTS_HOME = platformdirs.user_config_dir(appname="yams")
 
 CONFIG_FILE = "yams.yml"
 LOG_FILE_NAME = "yams.log"
@@ -79,7 +81,8 @@ def bootstrap_config():
 
     default_config = DEFAULTS
 
-    default_config["session_file"] = str(Path(home, DEFAULT_SESSION_FILENAME))
+    default_config["session_file"] = str(Path(platformdirs.user_state_dir(
+        appname="yams"), DEFAULT_SESSION_FILENAME))
 
     # Lets recognize environment variables by the user
     if "MPD_HOST" in os.environ:
@@ -240,7 +243,7 @@ def process_cli_args():
     parser = argparse.ArgumentParser(
         prog="YAMS",
         description="Yet Another Mpd Scrobbler, v{}. Configuration directories are either ~/.config/yams, ~/.yams, or your current working directory. Create one of these paths if need be.".format(
-            VERSION
+            importlib.metadata.version("YAMScrobbler")
         ),
     )
     parser.add_argument(
@@ -416,14 +419,19 @@ def configure():
     setup_logger(True, False, log_level)
     home = get_home_dir()
     config_path = str(Path(home, CONFIG_FILE))
+    app_dirs = platformdirs.PlatformDirs("yams")
 
     # 1 Defaults:
     config = DEFAULTS
     # 1.2 Home dependent defaults:
-    config["session_file"] = str(Path(home, DEFAULT_SESSION_FILENAME))
-    config["log_file"] = str(Path(home, LOG_FILE_NAME))
-    config["pid_file"] = str(Path(home, DEFAULT_PID_FILENAME))
-    config["cache_file"] = str(Path(home, DEFAULT_CACHE_FILENAME))
+    config["session_file"] = str(Path(app_dirs.user_state_dir,
+                                      DEFAULT_SESSION_FILENAME))
+    config["log_file"] = str(Path(app_dirs.user_state_dir,
+                                  LOG_FILE_NAME))
+    config["pid_file"] = str(Path(platformdirs.user_runtime_dir(),
+                             DEFAULT_PID_FILENAME))
+    config["cache_file"] = str(Path(app_dirs.user_cache_dir,
+                                    DEFAULT_CACHE_FILENAME))
     # 2 Environment variables
     if "MPD_HOST" in os.environ:
         config["mpd_host"] = os.environ["MPD_HOST"]

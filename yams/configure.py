@@ -437,9 +437,16 @@ def configure():
     # 1 Defaults:
     config = DEFAULTS
     # 1.2 Home dependent defaults:
+
     config["session_file"] = str(
         Path(app_dirs.user_state_dir, DEFAULT_SESSION_FILENAME)
     )
+
+    # Older versions of YAMS saved their session into the user's config directory
+    potential_legacy_session = Path(app_dirs.user_config_dir, DEFAULT_SESSION_FILENAME)
+    if potential_legacy_session.exists():
+        config["session_file"] = str(potential_legacy_session)
+
     config["log_file"] = str(Path(app_dirs.user_state_dir, LOG_FILE_NAME))
     config["pid_file"] = str(
         Path(platformdirs.user_runtime_dir(), DEFAULT_PID_FILENAME)

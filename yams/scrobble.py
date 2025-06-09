@@ -691,7 +691,6 @@ def is_track_scrobbleable(song, status):
     scrobbleable &= check_field("title", song)
     # We're doing a 'time' check here for mopidy, which uses it: a deprecated call to mpd
     scrobbleable &= check_field("duration", status) or check_field("time", status)
-    scrobbleable &= check_field("album", song)
 
     # If all fields present, check that song duration is not zero (would cause div by zero errors)
     if scrobbleable:
